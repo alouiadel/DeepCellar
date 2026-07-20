@@ -42,11 +42,12 @@ body {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
-.logo {
-  font-size: 2rem;
-  color: var(--purple);
-  text-align: center;
-  margin-bottom: 0.5rem;
+.logo-img {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.75rem;
+  border-radius: 10px;
 }
 
 h1 {
