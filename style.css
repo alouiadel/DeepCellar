@@ -1,0 +1,197 @@
+:root {
+  --purple: #8b5cf6;
+  --purple-dark: #7c3aed;
+  --purple-light: #a78bfa;
+  --dark: #121218;
+  --dark-card: #1c1c26;
+  --gray: #9ca3af;
+  --gray-dark: #374151;
+  --white: #ffffff;
+  --error: #f87171;
+  --success: #4ade80;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, var(--dark) 0%, #1e1b2e 100%);
+  color: var(--white);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-card {
+  background: var(--dark-card);
+  border: 1px solid var(--gray-dark);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.logo {
+  font-size: 2rem;
+  color: var(--purple);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin: 0.4rem 0 2rem;
+}
+
+.field {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-bottom: 0.4rem;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--dark);
+  border: 1px solid var(--gray-dark);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 0.95rem;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+}
+
+input::placeholder {
+  color: var(--gray-dark);
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--purple-light);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+}
+
+.toggle-password:hover {
+  color: var(--purple);
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--gray);
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.remember input {
+  accent-color: var(--purple);
+  cursor: pointer;
+}
+
+.link {
+  color: var(--purple-light);
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--purple);
+  text-decoration: underline;
+}
+
+.message {
+  min-height: 1.2rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.message.error {
+  color: var(--error);
+}
+
+.message.success {
+  color: var(--success);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.8rem;
+  background: var(--purple);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.1s;
+}
+
+.btn-primary:hover {
+  background: var(--purple-dark);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-top: 1.5rem;
+}
