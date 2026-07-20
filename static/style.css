@@ -66,6 +66,16 @@ h1 {
   margin-bottom: 1.25rem;
 }
 
+.field-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
 label {
   display: block;
   font-size: 0.85rem;

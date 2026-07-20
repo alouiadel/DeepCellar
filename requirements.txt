@@ -1,0 +1,4 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pwdlib[argon2]>=0.3
+PyJWT>=2.10

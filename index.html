@@ -3,68 +3,141 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
-    <link rel="stylesheet" href="style.css" />
+    <title>DeepCellar — Login</title>
+    <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <div class="login-card">
       <div class="logo">◆</div>
-      <h1>Welcome back</h1>
-      <p class="subtitle">Sign in to your account</p>
 
-      <form id="loginForm" novalidate>
-        <div class="field">
-          <label for="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            placeholder="you@example.com"
-            autocomplete="email"
-            required
-          />
-        </div>
+      <!-- Login -->
+      <section id="loginView">
+        <h1>Welcome back</h1>
+        <p class="subtitle">Sign in to your account</p>
 
-        <div class="field">
-          <label for="password">Password</label>
-          <div class="password-wrapper">
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="loginUsername">Username</label>
             <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="••••••••"
-              autocomplete="current-password"
+              type="text"
+              id="loginUsername"
+              name="username"
+              placeholder="your_username"
+              autocomplete="username"
               required
             />
-            <button
-              type="button"
-              id="togglePassword"
-              class="toggle-password"
-              aria-label="Show password"
-            >
-              Show
-            </button>
           </div>
-        </div>
 
-        <div class="options">
-          <label class="remember">
-            <input type="checkbox" id="remember" />
-            <span>Remember me</span>
-          </label>
-          <a href="#" class="link">Forgot password?</a>
-        </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="loginPassword"
+                name="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                data-target="loginPassword"
+                aria-label="Show password"
+              >
+                Show
+              </button>
+            </div>
+          </div>
 
-        <p id="message" class="message" role="alert"></p>
+          <p id="loginMessage" class="message" role="alert"></p>
 
-        <button type="submit" class="btn-primary">Sign in</button>
-      </form>
+          <button type="submit" class="btn-primary">Sign in</button>
+        </form>
 
-      <p class="footer">
-        Don't have an account? <a href="#" class="link">Sign up</a>
-      </p>
+        <p class="footer">
+          Don't have an account?
+          <a href="#" class="link" id="showSignup">Sign up</a>
+        </p>
+      </section>
+
+      <!-- Signup -->
+      <section id="signupView" hidden>
+        <h1>Create account</h1>
+        <p class="subtitle">Join DeepCellar</p>
+
+        <form id="signupForm" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="firstName">First name</label>
+              <input
+                type="text"
+                id="firstName"
+                name="first_name"
+                placeholder="Ada"
+                autocomplete="given-name"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="lastName">Last name</label>
+              <input
+                type="text"
+                id="lastName"
+                name="last_name"
+                placeholder="Lovelace"
+                autocomplete="family-name"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="signupUsername">Username</label>
+            <input
+              type="text"
+              id="signupUsername"
+              name="username"
+              placeholder="3-30 chars: letters, digits, _ or -"
+              autocomplete="username"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="signupPassword">Password</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="signupPassword"
+                name="password"
+                placeholder="At least 8 characters"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                data-target="signupPassword"
+                aria-label="Show password"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <p id="signupMessage" class="message" role="alert"></p>
+
+          <button type="submit" class="btn-primary">Create account</button>
+        </form>
+
+        <p class="footer">
+          Already have an account?
+          <a href="#" class="link" id="showLogin">Sign in</a>
+        </p>
+      </section>
     </div>
 
-    <script src="script.js"></script>
+    <script src="/static/script.js"></script>
   </body>
 </html>
