@@ -1,15 +1,17 @@
 # DeepCellar
 
 Login/signup page (HTML/CSS/JS) served by a FastAPI app, with real local
-authentication. After login, a dashboard lists the models of the local
-Ollama instance (grouped cloud vs local, thinking models highlighted) —
-the first step towards a RAG chatbot.
+authentication. After login: a chat window that talks to the local Ollama
+instance (temporary session with conversational memory), plus a models
+dashboard (cloud vs local, thinking models highlighted). Steps towards a
+RAG chatbot.
 
 ## Structure
 
 - `run_app.py` — FastAPI app: API routes (`/api/signup`, `/api/login`,
-  `/api/logout`, `/api/me`, `/api/ollama/models`), serves `index.html` at `/`
-  and the protected `app.html` (requires login).
+  `/api/logout`, `/api/me`, `/api/ollama/models`, `POST /api/chat`
+  streaming NDJSON), serves `index.html` at `/` and the protected
+  `app.html` (chat) / `models.html` (dashboard).
 - `auth.py` — argon2 password hashing (`pwdlib`), JWT session tokens (PyJWT),
   per-install secret key generated into `.secret_key` (gitignored, never
   hardcode it).
@@ -19,10 +21,18 @@ the first step towards a RAG chatbot.
   default `http://localhost:11434`). `/api/tags` provides everything:
   cloud models are identified by `remote_host`, thinking models by
   `"thinking"` in `capabilities` (falls back to `/api/show` on older
-  Ollama versions without `capabilities` in `/api/tags`).
+  Ollama versions). `stream_chat` proxies `/api/chat`; on failure it
+  yields a final `{"done": true, "error": ...}` line instead of raising.
 - `index.html`, `static/` — public assets (login + signup forms).
-- `app.html` + `static/app.js` — dashboard shown after login; asks the user
-  to start Ollama (`ollama serve`) when it is unreachable (503 from the API).
+- `app.html` + `static/app.js` — chat window: model picker (thinking models
+  marked ✦, `think: true` sent for them), message history kept client-side
+  and resent each turn (Ollama's `/api/chat` is stateless — that resend IS
+  the memory). Assistant replies render as markdown via vendored
+  `marked` + `DOMPurify` (`static/vendor/`, pinned, offline-friendly,
+  prettier-ignored — see `.prettierignore`). Temporary session: switching
+  models or reloading resets it.
+- `models.html` + `static/models.js` — models dashboard; asks the user to
+  start Ollama (`ollama serve`) when it is unreachable (503 from the API).
 - Session: JWT in an HttpOnly, SameSite=Lax cookie (`deepcellar_token`).
 
 Only `static/` is served as static files — keep source code, the DB and

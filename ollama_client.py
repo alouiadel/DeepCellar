@@ -1,9 +1,13 @@
+import json
 import os
+from collections.abc import AsyncGenerator
 
 import httpx
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
 TIMEOUT = httpx.Timeout(3.0, connect=1.5)
+# No read timeout for chat streams: local models can take a while between chunks
+CHAT_TIMEOUT = httpx.Timeout(None, connect=1.5)
 
 
 class OllamaUnreachable(Exception):
@@ -56,3 +60,41 @@ def list_models() -> dict:
         "cloud": [m for m in models if m["cloud"]],
         "local": [m for m in models if not m["cloud"]],
     }
+
+
+async def stream_chat(
+    model: str, messages: list[dict], think: bool
+) -> AsyncGenerator[str, None]:
+    """Stream NDJSON lines from Ollama's /api/chat.
+
+    Memory is conversational: the caller resends the full message history each
+    time (Ollama's chat API is stateless). On failure, a final
+    {"done": true, "error": "..."} line is yielded instead of raising.
+    """
+    payload = {"model": model, "messages": messages, "think": think}
+    try:
+        async with httpx.AsyncClient(timeout=CHAT_TIMEOUT) as client:
+            async with client.stream(
+                "POST", f"{OLLAMA_HOST}/api/chat", json=payload
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if line.strip():
+                        yield line + "\n"
+    except httpx.HTTPStatusError as exc:
+        yield (
+            json.dumps(
+                {"done": True, "error": f"Ollama error {exc.response.status_code}"}
+            )
+            + "\n"
+        )
+    except (httpx.ConnectError, httpx.TimeoutException):
+        yield (
+            json.dumps(
+                {
+                    "done": True,
+                    "error": "Ollama is not reachable. Start it with `ollama serve`.",
+                }
+            )
+            + "\n"
+        )

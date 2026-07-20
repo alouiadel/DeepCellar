@@ -2,7 +2,7 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Response, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -16,7 +16,7 @@ from auth import (
     hash_password,
     verify_password,
 )
-from ollama_client import OllamaUnreachable, list_models
+from ollama_client import OllamaUnreachable, list_models, stream_chat
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -34,6 +34,18 @@ class SignupRequest(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(pattern="^(user|assistant|system)$")
+    content: str = Field(max_length=100_000)
+    thinking: str | None = Field(default=None, max_length=100_000)
+
+
+class ChatRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=200)
+    messages: list[ChatMessage] = Field(min_length=1, max_length=200)
+    think: bool = False
 
 
 @app.post("/api/signup", status_code=status.HTTP_201_CREATED)
@@ -109,6 +121,18 @@ def ollama_models(username: str = Depends(get_current_username)) -> dict:
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "Ollama is not reachable. Start it with `ollama serve` or open the Ollama app.",
         ) from exc
+
+
+@app.post("/api/chat")
+async def chat(body: ChatRequest, username: str = Depends(get_current_username)):
+    messages = [m.model_dump(exclude_none=True) for m in body.messages]
+    stream = stream_chat(body.model, messages, body.think)
+    return StreamingResponse(stream, media_type="application/x-ndjson")
+
+
+@app.get("/models.html", include_in_schema=False)
+def models_page(username: str = Depends(get_current_username)) -> FileResponse:
+    return FileResponse(BASE_DIR / "models.html")
 
 
 @app.get("/app.html", include_in_schema=False)

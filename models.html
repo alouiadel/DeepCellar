@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DeepCellar — Chat</title>
+    <title>DeepCellar — Models</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link
       rel="icon"
@@ -21,8 +21,8 @@
         <span>DeepCellar</span>
       </div>
       <nav class="nav">
-        <a href="/app.html" class="nav-link active">Chat</a>
-        <a href="/models.html" class="nav-link">Models</a>
+        <a href="/app.html" class="nav-link">Chat</a>
+        <a href="/models.html" class="nav-link active">Models</a>
       </nav>
       <div class="user-area">
         <span id="userInfo" class="user-info"></span>
@@ -30,31 +30,20 @@
       </div>
     </header>
 
-    <main class="chat-layout">
-      <div class="chat-header">
-        <label for="modelSelect" class="model-label">Model</label>
-        <select id="modelSelect" class="model-select" disabled>
-          <option>Loading…</option>
-        </select>
-      </div>
+    <main class="content">
+      <h1>Available models</h1>
 
       <div id="statusArea" class="status-area" role="status"></div>
 
-      <div id="messages" class="messages" hidden></div>
+      <section id="modelsArea" hidden>
+        <h2>Cloud <span class="count" id="cloudCount"></span></h2>
+        <div id="cloudModels" class="model-grid"></div>
 
-      <form id="chatForm" class="chat-input" hidden>
-        <textarea
-          id="chatInput"
-          rows="1"
-          placeholder="Message… (Enter to send, Shift+Enter for a new line)"
-          autocomplete="off"
-        ></textarea>
-        <button type="submit" class="btn-primary" id="sendBtn">Send</button>
-      </form>
+        <h2>Local <span class="count" id="localCount"></span></h2>
+        <div id="localModels" class="model-grid"></div>
+      </section>
     </main>
 
-    <script src="/static/vendor/marked.umd.js"></script>
-    <script src="/static/vendor/purify.min.js"></script>
-    <script src="/static/app.js"></script>
+    <script src="/static/models.js"></script>
   </body>
 </html>
