@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DeepCellar — Home</title>
+    <title>DeepCellar — Models</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link
       rel="icon"
@@ -14,13 +14,31 @@
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
     <link rel="stylesheet" href="/static/style.css" />
   </head>
-  <body>
-    <div class="login-card">
-      <img class="logo-img" src="/static/favicon.svg" alt="DeepCellar logo" />
-      <h1 id="welcome">Welcome</h1>
-      <p class="subtitle" id="userInfo"></p>
-      <button id="logoutBtn" class="btn-primary">Log out</button>
-    </div>
+  <body class="dashboard">
+    <header class="topbar">
+      <div class="brand">
+        <img class="logo-img" src="/static/favicon.svg" alt="DeepCellar logo" />
+        <span>DeepCellar</span>
+      </div>
+      <div class="user-area">
+        <span id="userInfo" class="user-info"></span>
+        <button id="logoutBtn" class="btn-secondary">Log out</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <h1>Available models</h1>
+
+      <div id="statusArea" class="status-area" role="status"></div>
+
+      <section id="modelsArea" hidden>
+        <h2>Cloud <span class="count" id="cloudCount"></span></h2>
+        <div id="cloudModels" class="model-grid"></div>
+
+        <h2>Local <span class="count" id="localCount"></span></h2>
+        <div id="localModels" class="model-grid"></div>
+      </section>
+    </main>
 
     <script src="/static/app.js"></script>
   </body>

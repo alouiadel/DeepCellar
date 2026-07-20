@@ -16,6 +16,7 @@ from auth import (
     hash_password,
     verify_password,
 )
+from ollama_client import OllamaUnreachable, list_models
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -97,6 +98,17 @@ def me(username: str = Depends(get_current_username)) -> dict:
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
     return dict(user)
+
+
+@app.get("/api/ollama/models")
+def ollama_models(username: str = Depends(get_current_username)) -> dict:
+    try:
+        return list_models()
+    except OllamaUnreachable as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Ollama is not reachable. Start it with `ollama serve` or open the Ollama app.",
+        ) from exc
 
 
 @app.get("/app.html", include_in_schema=False)

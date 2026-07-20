@@ -1,20 +1,28 @@
 # DeepCellar
 
 Login/signup page (HTML/CSS/JS) served by a FastAPI app, with real local
-authentication.
+authentication. After login, a dashboard lists the models of the local
+Ollama instance (grouped cloud vs local, thinking models highlighted) —
+the first step towards a RAG chatbot.
 
 ## Structure
 
 - `run_app.py` — FastAPI app: API routes (`/api/signup`, `/api/login`,
-  `/api/logout`, `/api/me`), serves `index.html` at `/` and the protected
-  `app.html` (requires login).
+  `/api/logout`, `/api/me`, `/api/ollama/models`), serves `index.html` at `/`
+  and the protected `app.html` (requires login).
 - `auth.py` — argon2 password hashing (`pwdlib`), JWT session tokens (PyJWT),
   per-install secret key generated into `.secret_key` (gitignored, never
   hardcode it).
 - `db.py` — SQLite (`deepcellar.db`, gitignored) with a `users` table:
   username (unique), first_name, last_name, password_hash.
+- `ollama_client.py` — talks to the Ollama server (`OLLAMA_HOST` env var,
+  default `http://localhost:11434`). `/api/tags` provides everything:
+  cloud models are identified by `remote_host`, thinking models by
+  `"thinking"` in `capabilities` (falls back to `/api/show` on older
+  Ollama versions without `capabilities` in `/api/tags`).
 - `index.html`, `static/` — public assets (login + signup forms).
-- `app.html` — placeholder page shown after login.
+- `app.html` + `static/app.js` — dashboard shown after login; asks the user
+  to start Ollama (`ollama serve`) when it is unreachable (503 from the API).
 - Session: JWT in an HttpOnly, SameSite=Lax cookie (`deepcellar_token`).
 
 Only `static/` is served as static files — keep source code, the DB and
