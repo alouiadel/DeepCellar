@@ -63,6 +63,17 @@ base" toggle, sources displayed under assistant replies.
 
 - MCP integration (tools for the chat models)
 - Agent-style capabilities
+- Side-by-side model comparison (send one prompt to two models, compare responses)
 - Hybrid search (keyword + vector)
 - Stop-generation button, context-length guard
 - Per-user preferences (system prompt, defaults)
+
+## Beyond core — adoption and longevity
+
+- **Deployment**: Docker image, single-file binaries (PyInstaller/Nuitka),
+  1-click deploy buttons (Render, Railway, Hugging Face Spaces)
+- **Plugin architecture**: custom tools, storage backends, auth plugins
+  without touching core code
+- **CI pipeline**: GitHub Actions for tests + linting on every PR
+- **Visibility**: live demo on Hugging Face Spaces, GIF/video for README,
+  community launches (r/LocalLLAMA, Show HN)
