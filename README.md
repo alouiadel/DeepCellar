@@ -75,14 +75,18 @@ Open http://127.0.0.1:8000, create an account, and start chatting.
 
 ```
 DeepCellar/
-├── run_app.py          FastAPI app: auth API, model list, streaming chat proxy
-├── auth.py             argon2 hashing, JWT sessions, per-install secret key
-├── db.py               SQLite users table
-├── ollama_client.py    Ollama API client (model listing, chat streaming)
+├── run_app.py          Entry point (uvicorn launcher)
+├── app/
+│   ├── main.py         FastAPI app: auth API, model list, streaming chat proxy
+│   ├── auth.py         argon2 hashing, JWT sessions, per-install secret key
+│   ├── db.py           SQLite users table
+│   └── ollama_client.py Ollama API client (model listing, chat streaming)
+├── pages/
+│   ├── index.html      Login / signup page
+│   ├── app.html        Chat window (protected)
+│   └── models.html     Models dashboard (protected)
 ├── requirements.txt
-├── index.html          Login / signup page
-├── app.html            Chat window (protected)
-├── models.html         Models dashboard (protected)
+├── next.md             Roadmap: sessions, then RAG, then MCP/agents
 ├── static/
 │   ├── style.css       Theme (purple / dark / gray)
 │   ├── script.js       Login + signup logic

@@ -8,35 +8,39 @@ RAG chatbot.
 
 ## Structure
 
-- `run_app.py` — FastAPI app: API routes (`/api/signup`, `/api/login`,
+- `run_app.py` — entry point: launches uvicorn with `app.main:app`.
+- `app/main.py` — FastAPI app: API routes (`/api/signup`, `/api/login`,
   `/api/logout`, `/api/me`, `/api/ollama/models`, `POST /api/chat`
-  streaming NDJSON), serves `index.html` at `/` and the protected
-  `app.html` (chat) / `models.html` (dashboard).
-- `auth.py` — argon2 password hashing (`pwdlib`), JWT session tokens (PyJWT),
-  per-install secret key generated into `.secret_key` (gitignored, never
-  hardcode it).
-- `db.py` — SQLite (`deepcellar.db`, gitignored) with a `users` table:
+  streaming NDJSON), serves `pages/index.html` at `/` and the protected
+  `pages/app.html` (chat) / `pages/models.html` (dashboard).
+- `app/auth.py` — argon2 password hashing (`pwdlib`), JWT session tokens
+  (PyJWT), per-install secret key generated into `.secret_key` (gitignored,
+  never hardcode it).
+- `app/db.py` — SQLite (`deepcellar.db`, gitignored) with a `users` table:
   username (unique), first_name, last_name, password_hash.
-- `ollama_client.py` — talks to the Ollama server (`OLLAMA_HOST` env var,
-  default `http://localhost:11434`). `/api/tags` provides everything:
+- `app/ollama_client.py` — talks to the Ollama server (`OLLAMA_HOST` env
+  var, default `http://localhost:11434`). `/api/tags` provides everything:
   cloud models are identified by `remote_host`, thinking models by
   `"thinking"` in `capabilities` (falls back to `/api/show` on older
   Ollama versions). `stream_chat` proxies `/api/chat`; on failure it
   yields a final `{"done": true, "error": ...}` line instead of raising.
-- `index.html`, `static/` — public assets (login + signup forms).
-- `app.html` + `static/app.js` — chat window: unified composer (textarea +
-  custom model dropdown + circular send button in one container), thinking
-  models marked ✦ (`think: true` sent for them), message history kept
-  client-side and resent each turn (Ollama's `/api/chat` is stateless —
-  that resend IS the memory). Only chat-capable models are selectable:
-  natively detected via `"completion"` in `capabilities` (excludes
-  embedding-only models). Assistant replies render as markdown via vendored
-  `marked` + `DOMPurify` (`static/vendor/`, pinned, offline-friendly,
-  prettier-ignored — see `.prettierignore`). Temporary session: switching
-  models or reloading resets it.
-- `models.html` + `static/models.js` — models dashboard; non-chatable models
-  get a red "⊘ not chatable" badge and a dimmed card; asks the user to
-  start Ollama (`ollama serve`) when it is unreachable (503 from the API).
+- `pages/index.html`, `static/` — public assets (login + signup forms).
+- `pages/app.html` + `static/app.js` — chat window: unified composer
+  (textarea + custom model dropdown + circular send button in one
+  container), thinking models marked ✦ (`think: true` sent for them),
+  message history kept client-side and resent each turn (Ollama's
+  `/api/chat` is stateless — that resend IS the memory). Only chat-capable
+  models are selectable: natively detected via `"completion"` in
+  `capabilities` (excludes embedding-only models). Assistant replies render
+  as markdown via vendored `marked` + `DOMPurify` (`static/vendor/`,
+  pinned, offline-friendly, prettier-ignored — see `.prettierignore`).
+  Temporary session: switching models or reloading resets it.
+- `pages/models.html` + `static/models.js` — models dashboard; non-chatable
+  models get a red "⊘ not chatable" badge and a dimmed card; asks the user
+  to start Ollama (`ollama serve`) when it is unreachable (503 from the
+  API).
+- `next.md` — roadmap: Milestone A (persistent chat sessions), Milestone B
+  (basic RAG with sqlite-vec), Milestone C (MCP/agents).
 - Session: JWT in an HttpOnly, SameSite=Lax cookie (`deepcellar_token`).
 
 Only `static/` is served as static files — keep source code, the DB and

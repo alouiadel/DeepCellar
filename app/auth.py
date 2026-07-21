@@ -7,8 +7,8 @@ import jwt
 from fastapi import HTTPException, Request, status
 from pwdlib import PasswordHash
 
-BASE_DIR = Path(__file__).resolve().parent
-SECRET_KEY_PATH = BASE_DIR / ".secret_key"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SECRET_KEY_PATH = PROJECT_ROOT / ".secret_key"
 
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 24
