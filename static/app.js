@@ -25,14 +25,19 @@ const messagesEl = document.getElementById("messages");
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
+const modelPicker = document.getElementById("modelPicker");
+const modelPickerBtn = document.getElementById("modelPickerBtn");
+const modelPickerLabel = document.getElementById("modelPickerLabel");
+const modelPickerPanel = document.getElementById("modelPickerPanel");
 
 const state = {
   models: [], // flat list from /api/ollama/models
+  selected: null, // selected model name
   messages: [], // chat memory, resent to Ollama on every turn
   streaming: false,
 };
 
-// --- Model picker ---
+// --- Model picker (custom dropdown) ---
 async function loadModels() {
   setStatus('<p class="loading">Connecting to Ollama…</p>');
   let res;
@@ -49,51 +54,133 @@ async function loadModels() {
   if (!res.ok) return showError(`Unexpected server error (${res.status}).`);
 
   const data = await res.json();
-  state.models = [...data.cloud, ...data.local];
+  // only models with the native "completion" capability can chat
+  // (embedding-only models like embeddinggemma are excluded)
+  state.models = [...data.cloud, ...data.local].filter((m) => m.chatable);
   if (!state.models.length)
-    return showError("No models installed in Ollama yet.");
+    return showError("No chat-capable models found in Ollama.");
 
-  populateSelect(data);
+  buildPicker(data);
   setStatus("");
   messagesEl.hidden = false;
   chatForm.hidden = false;
   chatInput.focus();
 }
 
-function populateSelect(data) {
-  const saved = localStorage.getItem("deepcellar_model");
-  modelSelect.innerHTML = "";
+function buildPicker(data) {
+  modelPickerPanel.innerHTML = "";
   for (const [label, models] of [
     ["Cloud", data.cloud],
     ["Local", data.local],
   ]) {
-    if (!models.length) continue;
-    const group = document.createElement("optgroup");
-    group.label = label;
-    for (const m of models) {
-      const opt = document.createElement("option");
-      opt.value = m.name;
-      opt.textContent = m.thinking ? `${m.name} ✦` : m.name;
-      group.appendChild(opt);
+    const chatable = models.filter((m) => m.chatable);
+    if (!chatable.length) continue;
+    const header = document.createElement("div");
+    header.className = "model-picker-group";
+    header.textContent = label;
+    modelPickerPanel.appendChild(header);
+    for (const m of chatable) {
+      modelPickerPanel.appendChild(buildOption(m));
     }
-    modelSelect.appendChild(group);
   }
-  if (saved && state.models.some((m) => m.name === saved)) {
-    modelSelect.value = saved;
-  }
-  modelSelect.disabled = false;
+  const saved = localStorage.getItem("deepcellar_model");
+  const initial = state.models.some((m) => m.name === saved)
+    ? saved
+    : state.models[0].name;
+  selectModel(initial, { silent: true });
+  modelPickerBtn.disabled = false;
 }
 
-modelSelect.addEventListener("change", () => {
-  localStorage.setItem("deepcellar_model", modelSelect.value);
-  // model switch = new conversation
-  state.messages = [];
-  messagesEl.innerHTML = "";
-});
+function buildOption(m) {
+  const opt = document.createElement("button");
+  opt.type = "button";
+  opt.className = "model-option";
+  opt.dataset.model = m.name;
+  opt.setAttribute("role", "option");
+
+  const name = document.createElement("span");
+  name.className = "opt-name";
+  name.textContent = m.name;
+  if (m.thinking) {
+    const star = document.createElement("span");
+    star.className = "opt-star";
+    star.textContent = " ✦";
+    star.title = "Thinking model";
+    name.appendChild(star);
+  }
+  opt.appendChild(name);
+
+  if (m.parameter_size) {
+    const meta = document.createElement("span");
+    meta.className = "opt-meta";
+    meta.textContent = m.parameter_size;
+    opt.appendChild(meta);
+  }
+
+  opt.addEventListener("click", () => selectModel(m.name));
+  return opt;
+}
+
+function selectModel(name, { silent = false } = {}) {
+  const changed = state.selected !== name;
+  state.selected = name;
+  const m = selectedModel();
+  modelPickerLabel.textContent = m.thinking ? `${name} ✦` : name;
+  localStorage.setItem("deepcellar_model", name);
+  modelPickerPanel
+    .querySelectorAll(".model-option")
+    .forEach((o) => o.classList.toggle("selected", o.dataset.model === name));
+  closePicker();
+  if (changed && !silent) {
+    // model switch = new conversation
+    state.messages = [];
+    messagesEl.innerHTML = "";
+  }
+}
 
 function selectedModel() {
-  return state.models.find((m) => m.name === modelSelect.value);
+  return state.models.find((m) => m.name === state.selected);
 }
+
+function openPicker() {
+  modelPickerPanel.hidden = false;
+  modelPicker.classList.add("open");
+  modelPickerBtn.setAttribute("aria-expanded", "true");
+  const selected = modelPickerPanel.querySelector(".model-option.selected");
+  (selected || modelPickerPanel.querySelector(".model-option"))?.focus();
+}
+
+function closePicker() {
+  modelPickerPanel.hidden = true;
+  modelPicker.classList.remove("open");
+  modelPickerBtn.setAttribute("aria-expanded", "false");
+}
+
+modelPickerBtn.addEventListener("click", () => {
+  modelPickerPanel.hidden ? openPicker() : closePicker();
+});
+
+document.addEventListener("click", (e) => {
+  if (!modelPicker.contains(e.target)) closePicker();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (modelPickerPanel.hidden) return;
+  if (e.key === "Escape") {
+    closePicker();
+    modelPickerBtn.focus();
+    return;
+  }
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  e.preventDefault();
+  const options = [...modelPickerPanel.querySelectorAll(".model-option")];
+  const idx = options.indexOf(document.activeElement);
+  const next =
+    e.key === "ArrowDown"
+      ? options[(idx + 1) % options.length]
+      : options[(idx - 1 + options.length) % options.length];
+  next.focus();
+});
 
 // --- Status helpers ---
 function setStatus(html) {
@@ -166,11 +253,16 @@ chatInput.addEventListener("keydown", (e) => {
   }
 });
 
-// auto-resize textarea
+// auto-resize textarea + enable send only when there's text
 chatInput.addEventListener("input", () => {
   chatInput.style.height = "auto";
   chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + "px";
+  updateSendBtn();
 });
+
+function updateSendBtn() {
+  sendBtn.disabled = state.streaming || !chatInput.value.trim();
+}
 
 async function sendMessage() {
   const text = chatInput.value.trim();
@@ -267,7 +359,8 @@ async function sendMessage() {
 
 function setStreaming(on) {
   state.streaming = on;
-  sendBtn.disabled = on;
-  sendBtn.textContent = on ? "…" : "Send";
-  modelSelect.disabled = on;
+  sendBtn.classList.toggle("busy", on);
+  updateSendBtn();
+  modelPickerBtn.disabled = on;
+  if (on) closePicker();
 }

@@ -24,14 +24,18 @@ RAG chatbot.
   Ollama versions). `stream_chat` proxies `/api/chat`; on failure it
   yields a final `{"done": true, "error": ...}` line instead of raising.
 - `index.html`, `static/` — public assets (login + signup forms).
-- `app.html` + `static/app.js` — chat window: model picker (thinking models
-  marked ✦, `think: true` sent for them), message history kept client-side
-  and resent each turn (Ollama's `/api/chat` is stateless — that resend IS
-  the memory). Assistant replies render as markdown via vendored
+- `app.html` + `static/app.js` — chat window: unified composer (textarea +
+  custom model dropdown + circular send button in one container), thinking
+  models marked ✦ (`think: true` sent for them), message history kept
+  client-side and resent each turn (Ollama's `/api/chat` is stateless —
+  that resend IS the memory). Only chat-capable models are selectable:
+  natively detected via `"completion"` in `capabilities` (excludes
+  embedding-only models). Assistant replies render as markdown via vendored
   `marked` + `DOMPurify` (`static/vendor/`, pinned, offline-friendly,
   prettier-ignored — see `.prettierignore`). Temporary session: switching
   models or reloading resets it.
-- `models.html` + `static/models.js` — models dashboard; asks the user to
+- `models.html` + `static/models.js` — models dashboard; non-chatable models
+  get a red "⊘ not chatable" badge and a dimmed card; asks the user to
   start Ollama (`ollama serve`) when it is unreachable (503 from the API).
 - Session: JWT in an HttpOnly, SameSite=Lax cookie (`deepcellar_token`).
 

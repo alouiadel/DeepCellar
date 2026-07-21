@@ -23,6 +23,7 @@ def _summarize(model: dict) -> dict:
         "cloud": cloud,
         "remote_host": model.get("remote_host") if cloud else None,
         "thinking": "thinking" in capabilities,
+        "chatable": "completion" in capabilities,
         "capabilities": capabilities,
         "family": details.get("family") or "",
         "parameter_size": details.get("parameter_size") or "",

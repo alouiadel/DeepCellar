@@ -405,6 +405,23 @@ body.dashboard {
   color: var(--purple-light);
 }
 
+/* Non-chatable models (no native "completion" capability) */
+.badge-nochat {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: var(--error);
+  color: var(--error);
+  font-weight: 600;
+  text-transform: none;
+}
+
+.model-card.nochat {
+  opacity: 0.55;
+}
+
+.model-card.nochat:hover {
+  border-color: var(--gray-dark);
+}
+
 .model-details {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -420,6 +437,34 @@ body.dashboard {
   color: var(--white);
   text-align: right;
   word-break: break-all;
+}
+
+/* ---------- Global custom scrollbar ---------- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-dark) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--gray-dark);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--purple);
+  background-clip: padding-box;
 }
 
 /* ---------- Nav ---------- */
@@ -461,34 +506,6 @@ body.dashboard {
   box-sizing: border-box;
 }
 
-.chat-header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-}
-
-.model-label {
-  color: var(--gray);
-  font-size: 0.85rem;
-  margin: 0;
-}
-
-.model-select {
-  background: var(--dark-card);
-  color: var(--white);
-  border: 1px solid var(--gray-dark);
-  border-radius: 8px;
-  padding: 0.45rem 0.7rem;
-  font-size: 0.9rem;
-  max-width: 320px;
-  outline: none;
-}
-
-.model-select:focus {
-  border-color: var(--purple);
-}
-
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -496,6 +513,224 @@ body.dashboard {
   flex-direction: column;
   gap: 0.9rem;
   padding: 0.25rem;
+}
+
+/* Composer: textarea + model picker + send in one smooth container */
+.composer {
+  margin-top: 1rem;
+  background: var(--dark-card);
+  border: 1px solid var(--gray-dark);
+  border-radius: 20px;
+  padding: 0.8rem 0.9rem 0.6rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.composer:focus-within {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+
+.composer textarea {
+  width: 100%;
+  resize: none;
+  background: transparent;
+  border: none;
+  color: var(--white);
+  padding: 0.2rem 0.3rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.composer textarea::placeholder {
+  color: var(--gray-dark);
+}
+
+.composer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+}
+
+.model-picker {
+  position: relative;
+}
+
+.model-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  color: var(--gray);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  max-width: 280px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.model-picker-btn span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-picker-btn:hover,
+.model-picker.open .model-picker-btn {
+  color: var(--white);
+  border-color: var(--gray-dark);
+  background: var(--dark);
+}
+
+.model-picker-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.model-picker-btn .chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.model-picker.open .chevron {
+  transform: rotate(180deg);
+}
+
+.model-picker-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 280px;
+  max-width: 360px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--dark-card);
+  border: 1px solid var(--gray-dark);
+  border-radius: 14px;
+  padding: 0.4rem;
+  z-index: 50;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  animation: picker-in 0.15s ease;
+}
+
+@keyframes picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.model-picker-group {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-dark);
+  padding: 0.45rem 0.6rem 0.25rem;
+}
+
+.model-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--white);
+  padding: 0.5rem 0.6rem;
+  border-radius: 9px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.model-option:hover,
+.model-option:focus-visible {
+  background: var(--dark);
+  outline: none;
+}
+
+.model-option.selected {
+  background: rgba(139, 92, 246, 0.16);
+  color: var(--purple-light);
+}
+
+.opt-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opt-star {
+  color: var(--purple-light);
+}
+
+.opt-meta {
+  flex-shrink: 0;
+  color: var(--gray-dark);
+  font-size: 0.75rem;
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--purple);
+  color: var(--white);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s,
+    opacity 0.15s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: var(--purple-dark);
+  transform: scale(1.08);
+}
+
+.send-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.send-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.send-btn.busy svg {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .bubble {
@@ -662,41 +897,4 @@ body.dashboard {
   white-space: pre-wrap;
   word-break: break-word;
   opacity: 0.85;
-}
-
-.chat-input {
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-end;
-  margin-top: 1rem;
-}
-
-.chat-input textarea {
-  flex: 1;
-  resize: none;
-  background: var(--dark-card);
-  border: 1px solid var(--gray-dark);
-  border-radius: 12px;
-  color: var(--white);
-  padding: 0.75rem 1rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.chat-input textarea:focus {
-  border-color: var(--purple);
-}
-
-.chat-input .btn-primary {
-  width: auto;
-  padding: 0.75rem 1.4rem;
-  border-radius: 12px;
-}
-
-.chat-input .btn-primary:disabled {
-  opacity: 0.6;
-  cursor: default;
 }

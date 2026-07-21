@@ -86,9 +86,14 @@ function renderGroup(kind, models) {
 
 function modelCard(m) {
   const card = document.createElement("div");
-  card.className = "model-card" + (m.thinking ? " thinking" : "");
+  card.className =
+    "model-card" +
+    (m.thinking ? " thinking" : "") +
+    (m.chatable ? "" : " nochat");
 
   const badges = [];
+  if (!m.chatable)
+    badges.push('<span class="badge badge-nochat">⊘ not chatable</span>');
   if (m.thinking)
     badges.push('<span class="badge badge-thinking">✦ Thinking</span>');
   if (m.cloud) badges.push('<span class="badge badge-cloud">☁ Cloud</span>');
