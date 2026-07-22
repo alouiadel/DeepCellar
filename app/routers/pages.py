@@ -1,28 +1,45 @@
+"""Serve the React SPA (Vite build in frontend/dist)."""
+
 from pathlib import Path
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.config import PROJECT_ROOT
-from app.dependencies import get_current_username
 
-PAGES_DIR = PROJECT_ROOT / "pages"
+SPA_DIR = PROJECT_ROOT / "frontend" / "dist"
 
 router = APIRouter(tags=["pages"], include_in_schema=False)
 
 
+def _spa_index() -> Path:
+    index = SPA_DIR / "index.html"
+    if index.is_file():
+        return index
+    raise HTTPException(
+        404,
+        "Frontend not built. Run: cd frontend && npm run build",
+    )
+
+
 @router.get("/")
 def index() -> FileResponse:
-    return FileResponse(PAGES_DIR / "index.html")
+    return FileResponse(_spa_index())
 
 
+@router.get("/login")
+@router.get("/chat")
+@router.get("/models")
+def spa_routes() -> FileResponse:
+    return FileResponse(_spa_index())
+
+
+# Old vanilla URLs → React routes
 @router.get("/app.html")
-def app_page(username: str = Depends(get_current_username)) -> FileResponse:
-    del username  # auth gate only
-    return FileResponse(PAGES_DIR / "app.html")
+def legacy_app() -> RedirectResponse:
+    return RedirectResponse("/chat", status_code=301)
 
 
 @router.get("/models.html")
-def models_page(username: str = Depends(get_current_username)) -> FileResponse:
-    del username  # auth gate only
-    return FileResponse(PAGES_DIR / "models.html")
+def legacy_models() -> RedirectResponse:
+    return RedirectResponse("/models", status_code=301)
