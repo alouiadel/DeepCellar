@@ -177,7 +177,7 @@ def get_chat(chat_id: int, username: str = Depends(get_current_username)) -> dic
         if not row:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
         messages = conn.execute(
-            "SELECT id, role, content, thinking, created_at FROM messages"
+            "SELECT role, content, thinking, created_at FROM messages"
             " WHERE chat_id = ? ORDER BY id ASC",
             (chat_id,),
         ).fetchall()
@@ -185,7 +185,6 @@ def get_chat(chat_id: int, username: str = Depends(get_current_username)) -> dic
         **_chat_dict(row),
         "messages": [
             {
-                "id": m["id"],
                 "role": m["role"],
                 "content": m["content"],
                 "thinking": m["thinking"],
