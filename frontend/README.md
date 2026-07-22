@@ -23,10 +23,12 @@ Each feature exposes a public barrel (`index.js`). Import from `@/features/auth`
 ## Dev
 
 ```bash
-# API on :8001
-cd .. && .venv/bin/python -c "import uvicorn; uvicorn.run('run_app:app', host='127.0.0.1', port=8001, reload=True)"
+# API on :8001 (from backend/)
+cd ../backend
+../.venv/bin/python -c "import uvicorn; uvicorn.run('run_app:app', host='127.0.0.1', port=8001, reload=True)"
 
 # UI
+cd ../frontend
 npm install
 npm run dev
 ```
@@ -41,3 +43,10 @@ docker compose up --build -d
 ```
 
 Frontend image builds from this folder (`frontend/Dockerfile` + `nginx.conf`).
+
+## Stack
+
+- React (JavaScript)
+- Redux Toolkit (per-feature slices)
+- Tailwind CSS v4
+- shadcn/ui-style components in `shared/ui`

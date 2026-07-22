@@ -5,9 +5,9 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 
-from app.config import PROJECT_ROOT
+from app.config import REPO_ROOT
 
-SPA_DIR = PROJECT_ROOT / "frontend" / "dist"
+SPA_DIR = REPO_ROOT / "frontend" / "dist"
 
 router = APIRouter(tags=["pages"], include_in_schema=False)
 

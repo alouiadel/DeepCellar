@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
-# Build from repo root:
-#   docker build -f backend/Dockerfile .
+# Build from backend/:
+#   docker build -t deepcellar-backend .
+# Or via Compose (context: ./backend).
 
 FROM python:3.12-slim
 

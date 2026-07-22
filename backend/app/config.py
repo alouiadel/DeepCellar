@@ -5,11 +5,16 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(PROJECT_ROOT / ".env")
+# backend/app/config.py → backend/ → repo root
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = BACKEND_ROOT.parent
+
+# Prefer repo-root .env (Compose / local), then backend/.env
+load_dotenv(REPO_ROOT / ".env")
+load_dotenv(BACKEND_ROOT / ".env")
 
 # Persist secret key (and sqlite file when not using Postgres)
-DATA_DIR = Path(os.environ.get("DATA_DIR", str(PROJECT_ROOT))).expanduser()
+DATA_DIR = Path(os.environ.get("DATA_DIR", str(BACKEND_ROOT))).expanduser()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # sqlite (default local) or postgresql://user:pass@host:5432/dbname

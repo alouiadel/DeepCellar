@@ -7,26 +7,25 @@
 
 # Python
 .venv
-__pycache__
+**/__pycache__
 *.py[cod]
 *.egg-info
 .pytest_cache
 .ruff_cache
 .mypy_cache
 
-# Local secrets & data (mounted/created at runtime)
+# Local secrets & data (never commit)
 .env
 .secret_key
-deepcellar.db
+*.db
 data/
 
 # Frontend
 frontend/node_modules
 frontend/dist
 
-# Docs / misc
+# Docs
 docs
 *.md
 !frontend/README.md
-next.md
-AGENTS.md
+!backend/README.md

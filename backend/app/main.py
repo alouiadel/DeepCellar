@@ -5,10 +5,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import db
-from app.config import PROJECT_ROOT
+from app.config import REPO_ROOT
 from app.routers import auth, chat, models, pages
 
-SPA_DIR = PROJECT_ROOT / "frontend" / "dist"
+SPA_DIR = REPO_ROOT / "frontend" / "dist"
 
 
 def create_app() -> FastAPI:

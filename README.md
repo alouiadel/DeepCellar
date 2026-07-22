@@ -58,13 +58,14 @@ git clone https://github.com/alouiadel/DeepCellar.git
 cd DeepCellar
 
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r backend/requirements.txt
 
 cp .env.example .env   # set DEFAULT_MODEL_PROVIDER + API key for AI Grid
 # or leave provider as ollama and start Ollama
 
-# API (port 8001 if 8000 is busy)
-.venv/bin/python -c "import uvicorn; uvicorn.run('run_app:app', host='127.0.0.1', port=8001, reload=True)"
+# API (from backend/; port 8001 if 8000 is busy)
+cd backend
+../.venv/bin/python -c "import uvicorn; uvicorn.run('run_app:app', host='127.0.0.1', port=8001, reload=True)"
 ```
 
 ### Frontend (React)
@@ -77,7 +78,7 @@ npm run dev
 
 Open http://127.0.0.1:5173 — Vite proxies `/api` to the FastAPI backend.
 
-Production UI build (optional; FastAPI serves `frontend/dist`):
+Production UI build (optional; FastAPI can serve `frontend/dist` in local mode):
 
 ```bash
 cd frontend && npm run build
@@ -128,32 +129,21 @@ DEFAULT_MODEL_LABEL=google/gemma-4-31B
 
 ```
 DeepCellar/
-├── run_app.py
 ├── .env.example
-├── app/
-│   ├── main.py              App factory (API routers + SPA)
-│   ├── config.py            Env / `.env` settings
-│   ├── db.py                SQLite users table
-│   ├── dependencies.py      Shared FastAPI deps (auth)
-│   ├── routers/
-│   │   ├── auth.py
-│   │   ├── chat.py
-│   │   ├── models.py
-│   │   └── pages.py         SPA HTML entry routes
-│   ├── schemas/
-│   └── services/
-├── backend/Dockerfile       FastAPI API image (context: repo root)
-├── frontend/Dockerfile      Nginx + React image (context: frontend/)
-├── frontend/nginx.conf      SPA reverse-proxy to API
-├── docker-compose.yml       frontend + backend + Postgres
-├── frontend/                Modular React app
-│   ├── src/
-│   │   ├── app/             Providers, router, Redux store
-│   │   ├── features/        auth / chat / models
-│   │   └── shared/          api, layout, ui (shadcn), lib
-│   └── dist/                `npm run build` output (gitignored)
+├── docker-compose.yml
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── run_app.py
+│   └── app/                 FastAPI package (routers, services, schemas)
+├── frontend/
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── package.json
+│   └── src/                 Modular React (app / features / shared)
 └── docs/
 ```
+
 Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`, `.env`.
 
 ## How it works
