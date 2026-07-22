@@ -3,14 +3,13 @@
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import jwt
 from pwdlib import PasswordHash
 
-from app.config import PROJECT_ROOT
+from app.config import DATA_DIR
 
-SECRET_KEY_PATH = PROJECT_ROOT / ".secret_key"
+SECRET_KEY_PATH = DATA_DIR / ".secret_key"
 
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 24
