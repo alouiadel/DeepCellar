@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: deepcellar-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-deepcellar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deepcellar}
+      POSTGRES_DB: ${POSTGRES_DB:-deepcellar}
+    volumes:
+      - deepcellar_pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-deepcellar} -d ${POSTGRES_DB:-deepcellar}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: deepcellar-backend
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deepcellar}:${POSTGRES_PASSWORD:-deepcellar}@db:5432/${POSTGRES_DB:-deepcellar}
+      # OLLAMA_HOST: http://host.docker.internal:11434
+    volumes:
+      - deepcellar_backend_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: deepcellar-frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  deepcellar_pgdata:
+  deepcellar_backend_data:

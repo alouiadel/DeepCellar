@@ -41,8 +41,8 @@ management, and auth layers are already in place.
 - JWT sessions in an HttpOnly, SameSite=Lax cookie
 - Per-install secret key generated on first run — nothing sensitive is
   ever committed to the repo
-- Only `static/` is served publicly; source code, the database, and the
-  secret key are never exposed over HTTP
+- Only the React SPA build is served publicly; source code, the database,
+  and the secret key are never exposed over HTTP
 
 ## Requirements
 
@@ -63,10 +63,44 @@ python3 -m venv .venv
 cp .env.example .env   # set DEFAULT_MODEL_PROVIDER + API key for AI Grid
 # or leave provider as ollama and start Ollama
 
-.venv/bin/python run_app.py
+# API (port 8001 if 8000 is busy)
+.venv/bin/python -c "import uvicorn; uvicorn.run('run_app:app', host='127.0.0.1', port=8001, reload=True)"
 ```
 
-Open http://127.0.0.1:8000, create an account, and start chatting.
+### Frontend (React)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://127.0.0.1:5173 — Vite proxies `/api` to the FastAPI backend.
+
+Production UI build (optional; FastAPI serves `frontend/dist`):
+
+```bash
+cd frontend && npm run build
+```
+
+### Docker Compose (frontend + backend + Postgres)
+
+```bash
+cp .env.example .env   # set AI_GRID_API_KEY, passwords, etc.
+docker compose up --build -d
+```
+
+| Service | URL / port | Role |
+|---------|------------|------|
+| **frontend** | http://127.0.0.1:8080 | Nginx + React SPA (proxies `/api`) |
+| **backend** | http://127.0.0.1:8000 | FastAPI API |
+| **db** | localhost:5432 | PostgreSQL 16 |
+
+```bash
+docker compose logs -f frontend backend db
+docker compose down
+```
+
 
 ## Configuration
 
@@ -97,28 +131,29 @@ DeepCellar/
 ├── run_app.py
 ├── .env.example
 ├── app/
-│   ├── main.py              App factory (include routers, mount static)
+│   ├── main.py              App factory (API routers + SPA)
 │   ├── config.py            Env / `.env` settings
 │   ├── db.py                SQLite users table
 │   ├── dependencies.py      Shared FastAPI deps (auth)
 │   ├── routers/
-│   │   ├── auth.py          Signup / login / logout / me
-│   │   ├── chat.py          Streaming chat
-│   │   ├── models.py        Model list + client config
-│   │   └── pages.py         HTML pages
-│   ├── schemas/
 │   │   ├── auth.py
-│   │   └── chat.py
+│   │   ├── chat.py
+│   │   ├── models.py
+│   │   └── pages.py         SPA HTML entry routes
+│   ├── schemas/
 │   └── services/
-│       ├── auth.py          argon2 + JWT
-│       ├── llm.py           Provider facade
-│       ├── ollama.py        Ollama client
-│       └── openai.py        OpenAI-compatible client (AI Grid, …)
-├── pages/
-├── static/
+├── backend/Dockerfile       FastAPI API image (context: repo root)
+├── frontend/Dockerfile      Nginx + React image (context: frontend/)
+├── frontend/nginx.conf      SPA reverse-proxy to API
+├── docker-compose.yml       frontend + backend + Postgres
+├── frontend/                Modular React app
+│   ├── src/
+│   │   ├── app/             Providers, router, Redux store
+│   │   ├── features/        auth / chat / models
+│   │   └── shared/          api, layout, ui (shadcn), lib
+│   └── dist/                `npm run build` output (gitignored)
 └── docs/
 ```
-
 Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`, `.env`.
 
 ## How it works

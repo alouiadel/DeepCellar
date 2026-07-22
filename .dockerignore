@@ -1,0 +1,32 @@
+# Git / IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+
+# Python
+.venv
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Local secrets & data (mounted/created at runtime)
+.env
+.secret_key
+deepcellar.db
+data/
+
+# Frontend
+frontend/node_modules
+frontend/dist
+
+# Docs / misc
+docs
+*.md
+!frontend/README.md
+next.md
+AGENTS.md
