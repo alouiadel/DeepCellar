@@ -1,13 +1,15 @@
+"""Password hashing and JWT session tokens."""
+
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import jwt
-from fastapi import HTTPException, Request, status
 from pwdlib import PasswordHash
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from app.config import PROJECT_ROOT
+
 SECRET_KEY_PATH = PROJECT_ROOT / ".secret_key"
 
 ALGORITHM = "HS256"
@@ -53,13 +55,3 @@ def decode_token(token: str) -> str | None:
         return payload.get("sub")
     except jwt.PyJWTError:
         return None
-
-
-def get_current_username(request: Request) -> str:
-    token = request.cookies.get(COOKIE_NAME)
-    username = decode_token(token) if token else None
-    if not username:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
-    return username

@@ -31,18 +31,29 @@ const modelPickerLabel = document.getElementById("modelPickerLabel");
 const modelPickerPanel = document.getElementById("modelPickerPanel");
 
 const state = {
-  models: [], // flat list from /api/ollama/models
+  models: [], // flat list from /api/models
   selected: null, // selected model name
-  messages: [], // chat memory, resent to Ollama on every turn
+  messages: [], // chat memory, resent each turn
   streaming: false,
+  provider: "ollama",
+  defaultModel: null,
 };
 
 // --- Model picker (custom dropdown) ---
 async function loadModels() {
-  setStatus('<p class="loading">Connecting to Ollama…</p>');
+  setStatus('<p class="loading">Connecting to model provider…</p>');
   let res;
   try {
-    res = await fetch("/api/ollama/models");
+    const [cfgRes, modelsRes] = await Promise.all([
+      fetch("/api/me/config"),
+      fetch("/api/models"),
+    ]);
+    if (cfgRes.ok) {
+      const cfg = await cfgRes.json();
+      state.provider = cfg.provider || "ollama";
+      state.defaultModel = cfg.default_model || null;
+    }
+    res = modelsRes;
   } catch {
     return showError("Could not reach the DeepCellar server.");
   }
@@ -50,15 +61,15 @@ async function loadModels() {
     window.location.href = "/";
     return;
   }
-  if (res.status === 503) return showOllamaDown();
+  if (res.status === 503) return showProviderDown();
   if (!res.ok) return showError(`Unexpected server error (${res.status}).`);
 
   const data = await res.json();
-  // only models with the native "completion" capability can chat
-  // (embedding-only models like embeddinggemma are excluded)
+  state.provider = data.provider || state.provider;
+  // only chat-capable models (embedding/OCR excluded)
   state.models = [...data.cloud, ...data.local].filter((m) => m.chatable);
   if (!state.models.length)
-    return showError("No chat-capable models found in Ollama.");
+    return showError("No chat-capable models found for this provider.");
 
   buildPicker(data);
   setStatus("");
@@ -86,7 +97,9 @@ function buildPicker(data) {
   const saved = localStorage.getItem("deepcellar_model");
   const initial = state.models.some((m) => m.name === saved)
     ? saved
-    : state.models[0].name;
+    : state.models.some((m) => m.name === state.defaultModel)
+      ? state.defaultModel
+      : state.models[0].name;
   selectModel(initial, { silent: true });
   modelPickerBtn.disabled = false;
 }
@@ -188,11 +201,16 @@ function setStatus(html) {
   statusArea.hidden = !html;
 }
 
-function showOllamaDown() {
+function showProviderDown() {
+  const isOllama = state.provider === "ollama";
   setStatus(`
     <div class="notice error-notice">
-      <strong>Ollama isn't running.</strong>
-      <p>Start it with <code>ollama serve</code> or open the Ollama app, then retry.</p>
+      <strong>${isOllama ? "Ollama isn't running." : "AI provider unreachable."}</strong>
+      <p>${
+        isOllama
+          ? "Start it with <code>ollama serve</code> or open the Ollama app, then retry."
+          : "Check <code>AI_GRID_BASE_URL</code> / API key in <code>.env</code>, then retry."
+      }</p>
       <button class="btn-secondary" id="retryBtn">Retry</button>
     </div>
   `);

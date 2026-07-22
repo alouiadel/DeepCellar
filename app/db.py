@@ -1,7 +1,7 @@
 import sqlite3
-from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from app.config import PROJECT_ROOT
+
 DB_PATH = PROJECT_ROOT / "deepcellar.db"
 
 

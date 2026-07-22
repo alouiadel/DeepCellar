@@ -47,8 +47,9 @@ management, and auth layers are already in place.
 ## Requirements
 
 - Python 3.11+
-- [Ollama](https://ollama.com) installed and running (`ollama serve`,
-  or the desktop app)
+- Either:
+  - [Ollama](https://ollama.com) running (`ollama serve` / desktop app), or
+  - An OpenAI-compatible provider (e.g. AI Grid) configured in `.env`
 
 ## Quick start
 
@@ -59,7 +60,9 @@ cd DeepCellar
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-# make sure Ollama is running, then:
+cp .env.example .env   # set DEFAULT_MODEL_PROVIDER + API key for AI Grid
+# or leave provider as ollama and start Ollama
+
 .venv/bin/python run_app.py
 ```
 
@@ -67,50 +70,69 @@ Open http://127.0.0.1:8000, create an account, and start chatting.
 
 ## Configuration
 
-| Variable      | Default                  | Description           |
-| ------------- | ------------------------ | --------------------- |
-| `OLLAMA_HOST` | `http://localhost:11434` | Ollama server address |
+Copy `.env.example` to `.env` and adjust:
+
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `DEFAULT_MODEL_PROVIDER` | `ollama` | `ollama`, `ai_grid`, or `openai` |
+| `DEFAULT_MODEL_LABEL` | `google/gemma-4-31B` | Preferred model id (OpenAI-compatible) |
+| `AI_GRID_API_KEY` | _(empty)_ | Bearer token for AI Grid / OpenAI-compatible API |
+| `AI_GRID_BASE_URL` | `http://app.ai-grid.io:4000/v1` | OpenAI-compatible base URL (`…/v1`) |
+| `OPENAI_API_KEY` / `OPENAI_BASE_URL` | aliases | Same as `AI_GRID_*` when using OpenAI gateways |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama server (when provider is `ollama`) |
+
+Example AI Grid `.env`:
+
+```bash
+DEFAULT_MODEL_PROVIDER=ai_grid
+AI_GRID_API_KEY=sk-…
+AI_GRID_BASE_URL=http://app.ai-grid.io:4000/v1
+DEFAULT_MODEL_LABEL=google/gemma-4-31B
+```
 
 ## Project structure
 
 ```
 DeepCellar/
-├── run_app.py          Entry point (uvicorn launcher)
+├── run_app.py
+├── .env.example
 ├── app/
-│   ├── main.py         FastAPI app: auth API, model list, streaming chat proxy
-│   ├── auth.py         argon2 hashing, JWT sessions, per-install secret key
-│   ├── db.py           SQLite users table
-│   └── ollama_client.py Ollama API client (model listing, chat streaming)
+│   ├── main.py              App factory (include routers, mount static)
+│   ├── config.py            Env / `.env` settings
+│   ├── db.py                SQLite users table
+│   ├── dependencies.py      Shared FastAPI deps (auth)
+│   ├── routers/
+│   │   ├── auth.py          Signup / login / logout / me
+│   │   ├── chat.py          Streaming chat
+│   │   ├── models.py        Model list + client config
+│   │   └── pages.py         HTML pages
+│   ├── schemas/
+│   │   ├── auth.py
+│   │   └── chat.py
+│   └── services/
+│       ├── auth.py          argon2 + JWT
+│       ├── llm.py           Provider facade
+│       ├── ollama.py        Ollama client
+│       └── openai.py        OpenAI-compatible client (AI Grid, …)
 ├── pages/
-│   ├── index.html      Login / signup page
-│   ├── app.html        Chat window (protected)
-│   └── models.html     Models dashboard (protected)
-├── requirements.txt
-├── next.md             Roadmap: sessions, then RAG, then MCP/agents
 ├── static/
-│   ├── style.css       Theme (purple / dark / gray)
-│   ├── script.js       Login + signup logic
-│   ├── app.js          Chat logic (streaming, memory, markdown)
-│   ├── models.js       Dashboard logic
-│   ├── vendor/         Pinned marked + DOMPurify (offline-friendly)
-│   └── favicon.*       DeepCellar brand icon
-└── docs/               Screenshots
+└── docs/
 ```
 
-Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`.
+Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`, `.env`.
 
 ## How it works
 
 - **Auth** — passwords are hashed with argon2 (`pwdlib`) and stored in a
   local SQLite database. Logging in issues a signed JWT stored in an
   HttpOnly cookie; protected pages and API routes verify it.
-- **Model detection** — everything comes from Ollama's `/api/tags`: cloud
-  models carry a `remote_host`, thinking and chat capability come from the
-  native `capabilities` array (with a `/api/show` fallback for older
-  Ollama versions).
-- **Chat memory** — Ollama's `/api/chat` is stateless, so the browser
-  keeps the conversation and resends it with every message. Reloading or
-  switching models starts a fresh temporary session.
+- **Providers** — `DEFAULT_MODEL_PROVIDER` selects Ollama or an
+  OpenAI-compatible gateway (AI Grid). Chat streams are always exposed to
+  the UI as Ollama-style NDJSON.
+- **Model detection** — Ollama uses `/api/tags`; OpenAI-compatible uses
+  `GET /v1/models`. Embedding/OCR-like ids are marked non-chatable.
+- **Chat memory** — the browser keeps the conversation and resends it with
+  every message. Reloading or switching models starts a fresh temporary session.
 
 ## Roadmap
 

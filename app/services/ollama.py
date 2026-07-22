@@ -1,10 +1,12 @@
+"""Ollama API client (model listing + chat streaming)."""
+
 import json
-import os
 from collections.abc import AsyncGenerator
 
 import httpx
 
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+from app.config import OLLAMA_HOST
+
 TIMEOUT = httpx.Timeout(3.0, connect=1.5)
 # No read timeout for chat streams: local models can take a while between chunks
 CHAT_TIMEOUT = httpx.Timeout(None, connect=1.5)

@@ -1,15 +1,45 @@
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
 .venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
 
-# Local app data (never commit)
+# Local app data & secrets (never commit)
 deepcellar.db
+*.db-journal
 .secret_key
+.env
+.env.*
+!.env.example
 
-# macOS
+# Test / coverage / type checkers
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Logs & temp
+*.log
+*.tmp
+.cache/
+
+# OS
 .DS_Store
+Thumbs.db
 
 # Editors
 .vscode/
 .idea/
+*.swp
+*~

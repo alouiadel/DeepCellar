@@ -18,21 +18,27 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   window.location.href = "/";
 });
 
-// --- Ollama models ---
+// --- Models ---
 const statusArea = document.getElementById("statusArea");
 const modelsArea = document.getElementById("modelsArea");
+let provider = "ollama";
 
 function setStatus(html) {
   statusArea.innerHTML = html;
   statusArea.hidden = !html;
 }
 
-function showOllamaDown() {
+function showProviderDown() {
   modelsArea.hidden = true;
+  const isOllama = provider === "ollama";
   setStatus(`
     <div class="notice error-notice">
-      <strong>Ollama isn't running.</strong>
-      <p>Start it with <code>ollama serve</code> or open the Ollama app, then retry.</p>
+      <strong>${isOllama ? "Ollama isn't running." : "AI provider unreachable."}</strong>
+      <p>${
+        isOllama
+          ? "Start it with <code>ollama serve</code> or open the Ollama app, then retry."
+          : "Check <code>AI_GRID_BASE_URL</code> / API key in <code>.env</code>, then retry."
+      }</p>
       <button class="btn-secondary" id="retryBtn">Retry</button>
     </div>
   `);
@@ -52,10 +58,18 @@ function showError(text) {
 }
 
 async function loadModels() {
-  setStatus('<p class="loading">Connecting to Ollama…</p>');
+  setStatus('<p class="loading">Connecting to model provider…</p>');
   let res;
   try {
-    res = await fetch("/api/ollama/models");
+    const [cfgRes, modelsRes] = await Promise.all([
+      fetch("/api/me/config"),
+      fetch("/api/models"),
+    ]);
+    if (cfgRes.ok) {
+      const cfg = await cfgRes.json();
+      provider = cfg.provider || "ollama";
+    }
+    res = modelsRes;
   } catch {
     return showError("Could not reach the DeepCellar server.");
   }
@@ -63,10 +77,11 @@ async function loadModels() {
     window.location.href = "/";
     return;
   }
-  if (res.status === 503) return showOllamaDown();
+  if (res.status === 503) return showProviderDown();
   if (!res.ok) return showError(`Unexpected server error (${res.status}).`);
 
   const data = await res.json();
+  provider = data.provider || provider;
   renderGroup("cloud", data.cloud);
   renderGroup("local", data.local);
   setStatus("");
@@ -115,8 +130,15 @@ function modelCard(m) {
     );
   if (!m.cloud && m.size_bytes)
     details.push(`<dt>Size</dt><dd>${(m.size_bytes / 1e9).toFixed(1)} GB</dd>`);
-  if (m.cloud && m.remote_host)
-    details.push(`<dt>Host</dt><dd>${new URL(m.remote_host).hostname}</dd>`);
+  if (m.cloud && m.remote_host) {
+    let host = m.remote_host;
+    try {
+      host = new URL(m.remote_host).hostname;
+    } catch {
+      /* keep raw */
+    }
+    details.push(`<dt>Host</dt><dd>${host}</dd>`);
+  }
 
   card.innerHTML = `
     <div class="model-name">${m.name}</div>
