@@ -719,18 +719,12 @@ body.dashboard {
   cursor: default;
 }
 
-.send-btn.busy svg {
-  animation: pulse 1s ease-in-out infinite;
+.send-btn.busy {
+  background: #c0392b;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
+.send-btn.busy:hover:not(:disabled) {
+  background: #e74c3c;
 }
 
 .bubble {

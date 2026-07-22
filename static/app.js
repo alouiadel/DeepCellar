@@ -35,6 +35,7 @@ const state = {
   selected: null, // selected model name
   messages: [], // chat memory, resent to Ollama on every turn
   streaming: false,
+  abortController: null,
 };
 
 // --- Model picker (custom dropdown) ---
@@ -263,6 +264,13 @@ chatForm.addEventListener("submit", (e) => {
   sendMessage();
 });
 
+sendBtn.addEventListener("click", (e) => {
+  if (state.streaming) {
+    e.preventDefault();
+    state.abortController?.abort();
+  }
+});
+
 chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -278,7 +286,11 @@ chatInput.addEventListener("input", () => {
 });
 
 function updateSendBtn() {
-  sendBtn.disabled = state.streaming || !chatInput.value.trim();
+  if (state.streaming) {
+    sendBtn.disabled = false;
+  } else {
+    sendBtn.disabled = !chatInput.value.trim();
+  }
 }
 
 async function sendMessage() {
@@ -300,6 +312,8 @@ async function sendMessage() {
   let errored = false;
 
   try {
+    const controller = new AbortController();
+    state.abortController = controller;
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -308,6 +322,7 @@ async function sendMessage() {
         messages: state.messages,
         think: model.thinking,
       }),
+      signal: controller.signal,
     });
     if (res.status === 401) {
       window.location.href = "/";
@@ -354,9 +369,17 @@ async function sendMessage() {
       }
     }
   } catch (err) {
-    errored = true;
-    body.textContent = `⚠ ${err.message || "Connection failed."}`;
-    bubble.classList.add("error");
+    if (err.name === "AbortError") {
+      // user clicked stop — keep partial content
+      if (thinkingEl)
+        thinkingEl.querySelector("summary").textContent = "Thinking";
+    } else {
+      errored = true;
+      body.textContent = `⚠ ${err.message || "Connection failed."}`;
+      bubble.classList.add("error");
+    }
+  } finally {
+    state.abortController = null;
   }
 
   setStreaming(false);
@@ -377,6 +400,15 @@ async function sendMessage() {
 function setStreaming(on) {
   state.streaming = on;
   sendBtn.classList.toggle("busy", on);
+  sendBtn.setAttribute("aria-label", on ? "Stop generation" : "Send message");
+  const svg = sendBtn.querySelector("svg");
+  if (on) {
+    svg.innerHTML =
+      '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>';
+  } else {
+    svg.innerHTML =
+      '<path d="M12 19V5m0 0l-6 6m6-6l6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
   updateSendBtn();
   modelPickerBtn.disabled = on;
   if (on) closePicker();

@@ -65,7 +65,7 @@ base" toggle, sources displayed under assistant replies.
 - Agent-style capabilities
 - Side-by-side model comparison (send one prompt to two models, compare responses)
 - Hybrid search (keyword + vector)
-- Stop-generation button, context-length guard
+- ~~Stop-generation button~~ (done), context-length guard
 - Per-user preferences (system prompt, defaults)
 
 ## Beyond core — adoption and longevity
