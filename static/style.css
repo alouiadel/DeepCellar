@@ -734,6 +734,7 @@ body.dashboard {
 }
 
 .bubble {
+  position: relative;
   max-width: 80%;
   padding: 0.7rem 1rem;
   border-radius: 14px;
@@ -862,6 +863,43 @@ body.dashboard {
   background: var(--dark-card);
   border: 1px solid var(--gray-dark);
   border-bottom-left-radius: 4px;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gray-dark);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+
+.bubble.assistant:hover .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.copy-btn:hover,
+.copy-btn:focus-visible {
+  color: var(--purple-light);
+  background: var(--dark);
+}
+
+.copy-btn.copied {
+  opacity: 1;
+  color: var(--success);
 }
 
 .bubble.error {
