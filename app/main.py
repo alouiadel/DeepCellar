@@ -48,6 +48,29 @@ class ChatRequest(BaseModel):
     think: bool = False
 
 
+class CreateChatRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=200)
+
+
+def _user_id(conn, username: str) -> int:
+    row = conn.execute(
+        "SELECT id FROM users WHERE username = ?", (username,)
+    ).fetchone()
+    if not row:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
+    return row["id"]
+
+
+def _chat_dict(row) -> dict:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "model": row["model"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }
+
+
 @app.post("/api/signup", status_code=status.HTTP_201_CREATED)
 def signup(body: SignupRequest) -> dict:
     if not USERNAME_RE.fullmatch(body.username):
@@ -110,6 +133,66 @@ def me(username: str = Depends(get_current_username)) -> dict:
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
     return dict(user)
+
+
+@app.get("/api/chats")
+def list_chats(username: str = Depends(get_current_username)) -> dict:
+    with db.get_connection() as conn:
+        uid = _user_id(conn, username)
+        rows = conn.execute(
+            "SELECT id, title, model, created_at, updated_at FROM chats"
+            " WHERE user_id = ? ORDER BY updated_at DESC, id DESC",
+            (uid,),
+        ).fetchall()
+    return {"chats": [_chat_dict(r) for r in rows]}
+
+
+@app.post("/api/chats", status_code=status.HTTP_201_CREATED)
+def create_chat(
+    body: CreateChatRequest, username: str = Depends(get_current_username)
+) -> dict:
+    with db.get_connection() as conn:
+        uid = _user_id(conn, username)
+        cur = conn.execute(
+            "INSERT INTO chats (user_id, model) VALUES (?, ?)",
+            (uid, body.model),
+        )
+        chat_id = cur.lastrowid
+        row = conn.execute(
+            "SELECT id, title, model, created_at, updated_at FROM chats WHERE id = ?",
+            (chat_id,),
+        ).fetchone()
+    return _chat_dict(row)
+
+
+@app.get("/api/chats/{chat_id}")
+def get_chat(chat_id: int, username: str = Depends(get_current_username)) -> dict:
+    with db.get_connection() as conn:
+        uid = _user_id(conn, username)
+        row = conn.execute(
+            "SELECT id, title, model, created_at, updated_at FROM chats"
+            " WHERE id = ? AND user_id = ?",
+            (chat_id, uid),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+        messages = conn.execute(
+            "SELECT role, content, thinking, created_at FROM messages"
+            " WHERE chat_id = ? ORDER BY id ASC",
+            (chat_id,),
+        ).fetchall()
+    return {
+        **_chat_dict(row),
+        "messages": [
+            {
+                "role": m["role"],
+                "content": m["content"],
+                "thinking": m["thinking"],
+                "created_at": m["created_at"],
+            }
+            for m in messages
+        ],
+    }
 
 
 @app.get("/api/ollama/models")
