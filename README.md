@@ -118,6 +118,11 @@ Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`.
 - Persistent and multiple chat sessions
 - Per-user preferences
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for design principles, the roadmap,
+and how to submit changes.
+
 ## Development
 
 Formatting (installed via Homebrew):
