@@ -20,6 +20,7 @@ deepcellar.db
 .env
 .env.*
 !.env.example
+data/
 
 # Test / coverage / type checkers
 .pytest_cache/
@@ -38,8 +39,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*~
+# Frontend
+frontend/node_modules/
+frontend/dist/

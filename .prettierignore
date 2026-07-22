@@ -1,1 +1,2 @@
-static/vendor/
+frontend/dist/
+frontend/node_modules/
