@@ -21,8 +21,10 @@ offline.
 
 - Streams replies from Ollama's native `/api/chat` endpoint through a
   FastAPI proxy (NDJSON)
-- Persistent chat sessions in a sidebar: new chat, full history on click,
-  delete — the server tees the stream and stores each turn in SQLite
+- Persistent chat sessions in a sidebar: auto-created on the first
+  message, full history on click, delete — the server tees the stream
+  and stores each turn in SQLite, and a reload brings you back to your
+  last chat
 - Conversational memory: the full message history is resent each turn
   (Ollama's chat API is stateless by design)
 - Thinking models (detected natively via `capabilities`) get `think: true`
@@ -121,9 +123,9 @@ Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`.
   native `capabilities` array (with a `/api/show` fallback for older
   Ollama versions).
 - **Chat memory** — Ollama's `/api/chat` is stateless, so the browser
-  keeps the conversation and resends it with every message. Sidebar chats
-  are persisted: the streaming proxy tees each turn into SQLite, so they
-  survive reloads. Switching models starts a fresh temporary session.
+  keeps the conversation and resends it with every message. Every chat
+  persists from its first message: the streaming proxy tees each turn
+  into SQLite. Switching models starts a fresh chat.
 
 ## Roadmap
 

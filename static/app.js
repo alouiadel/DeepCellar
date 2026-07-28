@@ -4,11 +4,12 @@ fetch("/api/me")
     if (!res.ok) throw new Error("not authenticated");
     return res.json();
   })
-  .then((user) => {
+  .then(async (user) => {
     document.getElementById("userInfo").textContent =
       `${user.first_name} ${user.last_name} — @${user.username}`;
-    loadModels();
-    loadChats();
+    await loadModels();
+    await loadChats();
+    restoreLastChat();
   })
   .catch(() => {
     window.location.href = "/";
@@ -34,7 +35,7 @@ const state = {
   models: [], // flat list from /api/ollama/models
   selected: null, // selected model name
   messages: [], // chat memory, resent to Ollama on every turn
-  chatId: null, // active persisted chat; null = unsaved temporary session
+  chatId: null, // active chat; null until the first message auto-creates one
   chats: [], // sidebar list from /api/chats
   streaming: false,
   abortController: null,
@@ -135,9 +136,9 @@ function selectModel(name, { silent = false } = {}) {
     .forEach((o) => o.classList.toggle("selected", o.dataset.model === name));
   closePicker();
   if (changed && !silent) {
-    // model switch = fresh unsaved conversation
+    // model switch = fresh conversation (auto-creates on first message)
     state.messages = [];
-    state.chatId = null;
+    setActiveChat(null);
     messagesEl.innerHTML = "";
     renderChatList();
   }
@@ -192,6 +193,23 @@ const chatListEl = document.getElementById("chatList");
 const newChatBtn = document.getElementById("newChatBtn");
 
 newChatBtn.addEventListener("click", newChat);
+
+// the active chat survives a reload via localStorage
+function setActiveChat(id) {
+  state.chatId = id;
+  if (id === null) localStorage.removeItem("deepcellar_chat");
+  else localStorage.setItem("deepcellar_chat", String(id));
+}
+
+async function restoreLastChat() {
+  const saved = Number(localStorage.getItem("deepcellar_chat"));
+  if (!saved) return;
+  if (state.chats.some((c) => c.id === saved)) {
+    await openChat(saved);
+  } else {
+    localStorage.removeItem("deepcellar_chat");
+  }
+}
 
 async function loadChats() {
   const res = await fetch("/api/chats");
@@ -252,7 +270,7 @@ async function newChat() {
   });
   if (!res.ok) return;
   const chat = await res.json();
-  state.chatId = chat.id;
+  setActiveChat(chat.id);
   state.messages = [];
   messagesEl.innerHTML = "";
   await loadChats();
@@ -264,7 +282,7 @@ async function openChat(id) {
   const res = await fetch(`/api/chats/${id}`);
   if (!res.ok) return;
   const chat = await res.json();
-  state.chatId = chat.id;
+  setActiveChat(chat.id);
   state.messages = chat.messages.map((m) => {
     const msg = { role: m.role, content: m.content };
     if (m.thinking) msg.thinking = m.thinking;
@@ -282,7 +300,7 @@ async function deleteChat(id) {
   const res = await fetch(`/api/chats/${id}`, { method: "DELETE" });
   if (!res.ok) return;
   if (state.chatId === id) {
-    state.chatId = null;
+    setActiveChat(null);
     state.messages = [];
     messagesEl.innerHTML = "";
   }
@@ -458,6 +476,13 @@ async function sendMessage() {
       return;
     }
     if (!res.ok || !res.body) throw new Error(`Server error ${res.status}`);
+
+    // first message without a picked chat: the server auto-created one
+    const createdChatId = res.headers.get("X-Chat-Id");
+    if (createdChatId && !state.chatId) {
+      setActiveChat(Number(createdChatId));
+      loadChats();
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();

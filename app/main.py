@@ -292,18 +292,23 @@ async def _persisting_stream(
 async def chat(body: ChatRequest, username: str = Depends(get_current_username)):
     messages = [m.model_dump(exclude_none=True) for m in body.messages]
     stream = stream_chat(body.model, messages, body.think)
-    if body.chat_id is not None:
-        with db.get_connection() as conn:
-            uid = _user_id(conn, username)
-            owned = conn.execute(
-                "SELECT 1 FROM chats WHERE id = ? AND user_id = ?",
-                (body.chat_id, uid),
-            ).fetchone()
-        if not owned:
+    with db.get_connection() as conn:
+        uid = _user_id(conn, username)
+        chat_id = body.chat_id
+        if chat_id is None:
+            # chatting without picking a chat auto-creates one
+            chat_id = conn.execute(
+                "INSERT INTO chats (user_id, model) VALUES (?, ?)",
+                (uid, body.model),
+            ).lastrowid
+        elif not conn.execute(
+            "SELECT 1 FROM chats WHERE id = ? AND user_id = ?", (chat_id, uid)
+        ).fetchone():
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
-        if messages[-1]["role"] == "user":
-            stream = _persisting_stream(stream, body.chat_id, messages[-1]["content"])
-    return StreamingResponse(stream, media_type="application/x-ndjson")
+    if messages[-1]["role"] == "user":
+        stream = _persisting_stream(stream, chat_id, messages[-1]["content"])
+    headers = {"X-Chat-Id": str(chat_id)} if body.chat_id is None else None
+    return StreamingResponse(stream, media_type="application/x-ndjson", headers=headers)
 
 
 @app.get("/models.html", include_in_schema=False)

@@ -147,6 +147,7 @@ def test_chat_turn_persists_and_autotitles(client, monkeypatch):
     res = send_turn(client, chat_id)
     assert res.status_code == 200
     assert '"done":true' in res.text.replace(" ", "")
+    assert "x-chat-id" not in res.headers  # only set on auto-create
 
     detail = client.get(f"/api/chats/{chat_id}").json()
     assert detail["title"] == "hi there"
@@ -181,14 +182,25 @@ def test_failed_turn_is_not_persisted(client, monkeypatch):
     assert detail["title"] == ""
 
 
-def test_chat_without_chat_id_stays_unsaved(client, monkeypatch):
+def test_chat_without_chat_id_autocreates(client, monkeypatch):
     monkeypatch.setattr(main, "stream_chat", fake_stream)
     signup(client)
     login(client)
 
     res = client.post(
         "/api/chat",
-        json={"model": "m", "messages": [{"role": "user", "content": "hi"}]},
+        json={
+            "model": "m",
+            "messages": [{"role": "user", "content": "auto me"}],
+        },
     )
     assert res.status_code == 200
-    assert client.get("/api/chats").json()["chats"] == []
+    chat_id = int(res.headers["x-chat-id"])
+
+    detail = client.get(f"/api/chats/{chat_id}").json()
+    assert detail["model"] == "m"
+    assert detail["title"] == "auto me"
+    assert [(m["role"], m["content"]) for m in detail["messages"]] == [
+        ("user", "auto me"),
+        ("assistant", "Hello world"),
+    ]

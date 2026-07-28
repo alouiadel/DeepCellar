@@ -7,7 +7,8 @@ utilities. One command, one SQLite file, fully offline.
 ## Milestone A — Persistent chat sessions (DONE)
 
 Shipped: full chats CRUD, stream persistence with auto-titles, sidebar
-UI, pytest suite, GitHub Actions CI (ruff + prettier + pytest).
+UI (chats auto-create on the first message, reload restores the active
+chat), pytest suite, GitHub Actions CI (ruff + prettier + pytest).
 
 ## Milestone B — Basic RAG (NEXT)
 
