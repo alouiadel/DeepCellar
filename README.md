@@ -1,10 +1,11 @@
 # DeepCellar
 
-A local-first AI chat app that talks to your own
+A minimalist, self-hosted AI hub for companies, built on your own
 [Ollama](https://ollama.com) instance — local and cloud models, thinking
 support, and real authentication, all wrapped in a dark purple UI.
-DeepCellar is the foundation for an upcoming RAG chatbot: the chat, model
-management, and auth layers are already in place.
+DeepCellar is becoming a RAG chatbot over company documents, tool-equipped
+agents, and everyday AI utilities: one command, one SQLite file, fully
+offline.
 
 ![DeepCellar login](docs/screenshot-login.png)
 
@@ -86,7 +87,7 @@ DeepCellar/
 │   ├── app.html        Chat window (protected)
 │   └── models.html     Models dashboard (protected)
 ├── requirements.txt
-├── next.md             Roadmap: sessions, then RAG, then MCP/agents
+├── next.md             Roadmap: milestone map (chat → RAG → company → agents)
 ├── static/
 │   ├── style.css       Theme (purple / dark / gray)
 │   ├── script.js       Login + signup logic
@@ -114,9 +115,12 @@ Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`.
 
 ## Roadmap
 
-- RAG: document ingestion, embeddings, retrieval-augmented chats
-- Persistent and multiple chat sessions
-- Per-user preferences
+See [next.md](next.md) for the milestone map.
+
+- Persistent chat sessions (in progress)
+- RAG: document ingestion, embeddings, cited answers
+- Company layer: admin roles, shared knowledge bases, branding
+- Agents (MCP) and a toolbox of everyday AI utilities
 
 ## Contributing
 

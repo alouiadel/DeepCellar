@@ -7,11 +7,11 @@ pull request — PRs that don't respect these guidelines will be closed.
 
 ### 1. Local-first
 
-DeepCellar talks to a **local Ollama instance** on the user's machine.
-Cloud model support is purely informative (the dashboard shows which models
-are remote in Ollama's catalog). Do not add cloud API keys, `.env` provider
-config, or OpenAI-compatible proxy logic. The backend has no business
-calling external LLM APIs.
+DeepCellar is a **self-hosted AI hub for companies** that talks to a
+local Ollama instance. Cloud model support is purely informative (the
+dashboard shows which models are remote in Ollama's catalog). Do not add
+cloud API keys, `.env` provider config, or OpenAI-compatible proxy logic.
+The backend has no business calling external LLM APIs.
 
 ### 2. Minimal, focused changes
 
@@ -44,19 +44,22 @@ first.
 - **Format your code** — run `ruff check --fix . && ruff format .` for
   Python and `prettier --write .` for HTML/CSS/JS before committing.
 - **Don't add dependencies** unless absolutely necessary. Every new pip or
-  npm dependency is a maintenance burden. If you do add one, justify it in
-  the PR description.
+  npm dependency is a maintenance burden. The hard budget is **10 runtime
+  dependencies** (currently 5; `next.md` lists what's planned). Dev-only
+  tools (pytest, ruff) don't count. If you do add one, justify it in the
+  PR description.
 - **Don't restructure the project** — the `app/`, `pages/`, `static/`
   layout is intentional. Moving files into subdirectories or renaming
   packages adds churn without benefit.
 - **Keep the backend flat** — routers, schemas, and services subpackages
   are unnecessary for a project of this size. A single `main.py` with
   small, well-named modules in `app/` is the right structure.
-- **Don't add Docker, Docker Compose, or container tooling.** DeepCellar
-  is designed to run with a single `python run_app.py` command.
-- **Don't swap out SQLite** — it's the right database for a local-first
-  desktop-style app. Postgres, MySQL, or other external databases are not
-  needed.
+- **Don't add Docker or container tooling before milestone E.** The
+  primary way to run DeepCellar is a single `python run_app.py` command;
+  milestone E adds one simple Dockerfile for company deployments.
+- **Don't swap out SQLite** — it's the right database for a self-hosted
+  app whose entire state lives in one file. Postgres, MySQL, or other
+  external databases are not needed.
 - **Bug fixes and documentation improvements** are always welcome, even if
   they're not on the roadmap.
 - If you're unsure about a change, open an issue first to discuss it.
