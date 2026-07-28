@@ -2,7 +2,7 @@ import json
 import os
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2 as httpx
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
 TIMEOUT = httpx.Timeout(3.0, connect=1.5)
