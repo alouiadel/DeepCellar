@@ -1,4 +1,10 @@
-# DeepCellar
+<p align="center">
+  <img
+    src="docs/banner.svg"
+    alt="DeepCellar — Deep models, cellared locally."
+    width="480"
+  />
+</p>
 
 A minimalist, self-hosted AI hub for companies, built on your own
 [Ollama](https://ollama.com) instance — local and cloud models, thinking

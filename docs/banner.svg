@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 120" role="img" aria-label="DeepCellar — Deep models, cellared locally.">
+  <defs>
+    <linearGradient id="gem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a78bfa" />
+      <stop offset="1" stop-color="#7c3aed" />
+    </linearGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a78bfa" />
+      <stop offset="1" stop-color="#7c3aed" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(4, 26) scale(1.05)">
+    <rect width="64" height="64" rx="14" fill="#1c1c26" stroke="#374151" stroke-width="1.5" />
+    <rect x="10" y="10" width="44" height="7" rx="3.5" fill="#c4b5fd" />
+    <rect x="15" y="21" width="34" height="7" rx="3.5" fill="#a78bfa" />
+    <rect x="20" y="32" width="24" height="7" rx="3.5" fill="#8b5cf6" />
+    <path d="M32 42 L39 50 L32 58 L25 50 Z" fill="url(#gem)" />
+  </g>
+  <text x="88" y="63" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="700" letter-spacing="0.5" fill="url(#word)">DeepCellar</text>
+  <text x="89" y="96" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="19" fill="#9ca3af">Deep models, cellared locally.</text>
+</svg>
