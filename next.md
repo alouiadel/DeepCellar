@@ -45,3 +45,11 @@ chat), pytest suite, GitHub Actions CI (ruff + prettier + pytest).
 
 - One simple Dockerfile (`python run_app.py` stays the primary path)
 - Live demo, README GIFs + architecture diagram, community launches
+
+## Reality check
+
+The big whales (Open WebUI and friends) already ship everything on this
+roadmap and far more — feature parity is unwinnable, so do not chase it.
+DeepCellar still needs an added value beyond what they provide, and we
+don't have it yet. Keep that question in mind while building: every
+milestone should be a step toward answering it.

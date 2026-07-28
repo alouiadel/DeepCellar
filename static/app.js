@@ -325,6 +325,7 @@ function renderHistory() {
       bubble.insertBefore(thinkingEl, body);
     }
     renderMarkdown(body, m.content);
+    addCodeCopyButtons(body);
   }
   scrollToBottom();
 }
@@ -398,6 +399,36 @@ function addBubble(role, text) {
   messagesEl.appendChild(bubble);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return bubble;
+}
+
+// Wrap each code block with a hover copy button (called once rendering is final)
+function addCodeCopyButtons(container) {
+  for (const pre of container.querySelectorAll("pre")) {
+    if (pre.parentElement.classList.contains("code-block")) continue;
+    const wrap = document.createElement("div");
+    wrap.className = "code-block";
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    const btn = document.createElement("button");
+    btn.className = "code-copy-btn";
+    btn.textContent = "Copy";
+    btn.setAttribute("aria-label", "Copy code");
+    btn.addEventListener("click", () => {
+      const code = pre.querySelector("code");
+      navigator.clipboard
+        .writeText(code ? code.textContent : pre.textContent)
+        .then(() => {
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy";
+            btn.classList.remove("copied");
+          }, 1500);
+        });
+    });
+    wrap.appendChild(btn);
+  }
 }
 
 function scrollToBottom() {
@@ -546,6 +577,7 @@ async function sendMessage() {
       thinkingEl.querySelector("summary").textContent = "Thinking";
     // server persisted the turn — refresh sidebar (auto-title, ordering)
     if (state.chatId) loadChats();
+    addCodeCopyButtons(body);
   } else {
     // failed turn: drop the user message so the history stays consistent
     state.messages.pop();

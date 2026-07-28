@@ -899,6 +899,46 @@ body.dashboard {
   line-height: 1.5;
 }
 
+/* Code block with hover copy button (wrapper added by JS) */
+
+.code-block {
+  position: relative;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--gray-dark);
+  border-radius: 6px;
+  background: var(--dark-card);
+  color: var(--gray);
+  font-size: 0.72rem;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.code-block:hover .code-copy-btn,
+.code-copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  color: var(--purple-light);
+  border-color: var(--purple);
+}
+
+.code-copy-btn.copied {
+  opacity: 1;
+  color: var(--success);
+  border-color: var(--success);
+}
+
 .bubble-text blockquote {
   border-left: 3px solid var(--purple);
   margin: 0.5rem 0;
