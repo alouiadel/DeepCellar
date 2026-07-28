@@ -8,6 +8,7 @@ fetch("/api/me")
     document.getElementById("userInfo").textContent =
       `${user.first_name} ${user.last_name} — @${user.username}`;
     loadModels();
+    loadChats();
   })
   .catch(() => {
     window.location.href = "/";
@@ -18,8 +19,7 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   window.location.href = "/";
 });
 
-// --- Chat state (temporary session: history lives only in this page) ---
-const modelSelect = document.getElementById("modelSelect");
+// --- Chat state ---
 const statusArea = document.getElementById("statusArea");
 const messagesEl = document.getElementById("messages");
 const chatForm = document.getElementById("chatForm");
@@ -34,6 +34,8 @@ const state = {
   models: [], // flat list from /api/ollama/models
   selected: null, // selected model name
   messages: [], // chat memory, resent to Ollama on every turn
+  chatId: null, // active persisted chat; null = unsaved temporary session
+  chats: [], // sidebar list from /api/chats
   streaming: false,
   abortController: null,
 };
@@ -133,9 +135,11 @@ function selectModel(name, { silent = false } = {}) {
     .forEach((o) => o.classList.toggle("selected", o.dataset.model === name));
   closePicker();
   if (changed && !silent) {
-    // model switch = new conversation
+    // model switch = fresh unsaved conversation
     state.messages = [];
+    state.chatId = null;
     messagesEl.innerHTML = "";
+    renderChatList();
   }
 }
 
@@ -182,6 +186,130 @@ document.addEventListener("keydown", (e) => {
       : options[(idx - 1 + options.length) % options.length];
   next.focus();
 });
+
+// --- Chat sessions (sidebar) ---
+const chatListEl = document.getElementById("chatList");
+const newChatBtn = document.getElementById("newChatBtn");
+
+newChatBtn.addEventListener("click", newChat);
+
+async function loadChats() {
+  const res = await fetch("/api/chats");
+  if (!res.ok) return;
+  state.chats = (await res.json()).chats;
+  renderChatList();
+}
+
+// server timestamps are UTC ("YYYY-MM-DD HH:MM:SS") without a timezone marker
+function relativeTime(iso) {
+  const then = new Date(iso.replace(" ", "T") + "Z");
+  const secs = Math.max(0, (Date.now() - then.getTime()) / 1000);
+  if (secs < 60) return "just now";
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  if (secs < 30 * 86400) return `${Math.floor(secs / 86400)}d ago`;
+  return then.toLocaleDateString();
+}
+
+function renderChatList() {
+  chatListEl.innerHTML = "";
+  for (const chat of state.chats) {
+    const item = document.createElement("div");
+    item.className = "chat-item" + (chat.id === state.chatId ? " active" : "");
+
+    const text = document.createElement("div");
+    text.className = "chat-item-text";
+    const title = document.createElement("div");
+    title.className = "chat-item-title";
+    title.textContent = chat.title || "New chat";
+    const time = document.createElement("div");
+    time.className = "chat-item-time";
+    time.textContent = relativeTime(chat.updated_at);
+    text.append(title, time);
+
+    const del = document.createElement("button");
+    del.className = "chat-delete";
+    del.textContent = "×";
+    del.title = "Delete chat";
+    del.setAttribute("aria-label", "Delete chat");
+    del.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteChat(chat.id);
+    });
+
+    item.append(text, del);
+    item.addEventListener("click", () => openChat(chat.id));
+    chatListEl.appendChild(item);
+  }
+}
+
+async function newChat() {
+  if (state.streaming || !state.selected) return;
+  const res = await fetch("/api/chats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: state.selected }),
+  });
+  if (!res.ok) return;
+  const chat = await res.json();
+  state.chatId = chat.id;
+  state.messages = [];
+  messagesEl.innerHTML = "";
+  await loadChats();
+  chatInput.focus();
+}
+
+async function openChat(id) {
+  if (state.streaming || id === state.chatId) return;
+  const res = await fetch(`/api/chats/${id}`);
+  if (!res.ok) return;
+  const chat = await res.json();
+  state.chatId = chat.id;
+  state.messages = chat.messages.map((m) => {
+    const msg = { role: m.role, content: m.content };
+    if (m.thinking) msg.thinking = m.thinking;
+    return msg;
+  });
+  if (state.models.some((m) => m.name === chat.model)) {
+    selectModel(chat.model, { silent: true });
+  }
+  renderHistory();
+  renderChatList();
+  chatInput.focus();
+}
+
+async function deleteChat(id) {
+  const res = await fetch(`/api/chats/${id}`, { method: "DELETE" });
+  if (!res.ok) return;
+  if (state.chatId === id) {
+    state.chatId = null;
+    state.messages = [];
+    messagesEl.innerHTML = "";
+  }
+  await loadChats();
+}
+
+function renderHistory() {
+  messagesEl.innerHTML = "";
+  for (const m of state.messages) {
+    if (m.role === "user") {
+      addBubble("user", m.content);
+      continue;
+    }
+    const bubble = addBubble("assistant", "");
+    const body = bubble.querySelector(".bubble-text");
+    if (m.thinking) {
+      const thinkingEl = document.createElement("details");
+      thinkingEl.className = "thinking-block";
+      thinkingEl.innerHTML =
+        "<summary>Thinking</summary><div class='thinking-text'></div>";
+      thinkingEl.querySelector(".thinking-text").textContent = m.thinking;
+      bubble.insertBefore(thinkingEl, body);
+    }
+    renderMarkdown(body, m.content);
+  }
+  scrollToBottom();
+}
 
 // --- Status helpers ---
 function setStatus(html) {
@@ -321,6 +449,7 @@ async function sendMessage() {
         model: model.name,
         messages: state.messages,
         think: model.thinking,
+        chat_id: state.chatId,
       }),
       signal: controller.signal,
     });
@@ -390,6 +519,8 @@ async function sendMessage() {
     state.messages.push(msg);
     if (thinkingEl)
       thinkingEl.querySelector("summary").textContent = "Thinking";
+    // server persisted the turn — refresh sidebar (auto-title, ordering)
+    if (state.chatId) loadChats();
   } else {
     // failed turn: drop the user message so the history stays consistent
     state.messages.pop();

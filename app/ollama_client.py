@@ -74,14 +74,14 @@ async def stream_chat(
     """
     payload = {"model": model, "messages": messages, "think": think}
     try:
-        async with httpx.AsyncClient(timeout=CHAT_TIMEOUT) as client:
-            async with client.stream(
-                "POST", f"{OLLAMA_HOST}/api/chat", json=payload
-            ) as resp:
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if line.strip():
-                        yield line + "\n"
+        async with (
+            httpx.AsyncClient(timeout=CHAT_TIMEOUT) as client,
+            client.stream("POST", f"{OLLAMA_HOST}/api/chat", json=payload) as resp,
+        ):
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if line.strip():
+                    yield line + "\n"
     except httpx.HTTPStatusError as exc:
         yield (
             json.dumps(

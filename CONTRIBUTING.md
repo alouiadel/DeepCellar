@@ -42,7 +42,8 @@ first.
 ## General guidelines
 
 - **Format your code** — run `ruff check --fix . && ruff format .` for
-  Python and `prettier --write .` for HTML/CSS/JS before committing.
+  Python and `prettier --write .` for HTML/CSS/JS before committing. CI
+  checks both, plus the pytest suite, on every push and PR.
 - **Don't add dependencies** unless absolutely necessary. Every new pip or
   npm dependency is a maintenance burden. The hard budget is **10 runtime
   dependencies** (currently 5; `next.md` lists what's planned). Dev-only

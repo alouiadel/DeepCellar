@@ -1,3 +1,5 @@
+import json
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
@@ -46,6 +48,11 @@ class ChatRequest(BaseModel):
     model: str = Field(min_length=1, max_length=200)
     messages: list[ChatMessage] = Field(min_length=1, max_length=200)
     think: bool = False
+    chat_id: int | None = None
+
+
+class RenameChatRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
 
 
 class CreateChatRequest(BaseModel):
@@ -195,6 +202,39 @@ def get_chat(chat_id: int, username: str = Depends(get_current_username)) -> dic
     }
 
 
+@app.patch("/api/chats/{chat_id}")
+def rename_chat(
+    chat_id: int,
+    body: RenameChatRequest,
+    username: str = Depends(get_current_username),
+) -> dict:
+    with db.get_connection() as conn:
+        uid = _user_id(conn, username)
+        cur = conn.execute(
+            "UPDATE chats SET title = ? WHERE id = ? AND user_id = ?",
+            (body.title.strip(), chat_id, uid),
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+        row = conn.execute(
+            "SELECT id, title, model, created_at, updated_at FROM chats WHERE id = ?",
+            (chat_id,),
+        ).fetchone()
+    return _chat_dict(row)
+
+
+@app.delete("/api/chats/{chat_id}")
+def delete_chat(chat_id: int, username: str = Depends(get_current_username)) -> dict:
+    with db.get_connection() as conn:
+        uid = _user_id(conn, username)
+        cur = conn.execute(
+            "DELETE FROM chats WHERE id = ? AND user_id = ?", (chat_id, uid)
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+    return {"ok": True}
+
+
 @app.get("/api/ollama/models")
 def ollama_models(username: str = Depends(get_current_username)) -> dict:
     try:
@@ -206,10 +246,63 @@ def ollama_models(username: str = Depends(get_current_username)) -> dict:
         ) from exc
 
 
+async def _persisting_stream(
+    stream: AsyncGenerator[str, None], chat_id: int, user_content: str
+) -> AsyncGenerator[str, None]:
+    """Tee the NDJSON stream; on success persist the whole turn atomically.
+
+    The client resends the full history each turn (that resend is the memory),
+    so only the trailing user message and the assistant reply are written here.
+    """
+    content_parts: list[str] = []
+    thinking_parts: list[str] = []
+    failed = False
+    async for line in stream:
+        try:
+            chunk = json.loads(line)
+        except json.JSONDecodeError:
+            chunk = {}
+        if chunk.get("error"):
+            failed = True
+        message = chunk.get("message") or {}
+        content_parts.append(message.get("content") or "")
+        thinking_parts.append(message.get("thinking") or "")
+        yield line
+    if failed:
+        return
+    with db.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO messages (chat_id, role, content) VALUES (?, 'user', ?)",
+            (chat_id, user_content),
+        )
+        conn.execute(
+            "INSERT INTO messages (chat_id, role, content, thinking)"
+            " VALUES (?, 'assistant', ?, ?)",
+            (chat_id, "".join(content_parts), "".join(thinking_parts) or None),
+        )
+        conn.execute(
+            "UPDATE chats"
+            " SET title = CASE WHEN title = '' THEN ? ELSE title END,"
+            " updated_at = datetime('now') WHERE id = ?",
+            (user_content.strip().replace("\n", " ")[:40], chat_id),
+        )
+
+
 @app.post("/api/chat")
 async def chat(body: ChatRequest, username: str = Depends(get_current_username)):
     messages = [m.model_dump(exclude_none=True) for m in body.messages]
     stream = stream_chat(body.model, messages, body.think)
+    if body.chat_id is not None:
+        with db.get_connection() as conn:
+            uid = _user_id(conn, username)
+            owned = conn.execute(
+                "SELECT 1 FROM chats WHERE id = ? AND user_id = ?",
+                (body.chat_id, uid),
+            ).fetchone()
+        if not owned:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+        if messages[-1]["role"] == "user":
+            stream = _persisting_stream(stream, body.chat_id, messages[-1]["content"])
     return StreamingResponse(stream, media_type="application/x-ndjson")
 
 

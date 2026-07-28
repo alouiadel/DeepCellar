@@ -496,13 +496,101 @@ body.dashboard {
 
 /* ---------- Chat (app.html) ---------- */
 
+.chat-page {
+  display: flex;
+  height: calc(100vh - 59px); /* topbar height */
+}
+
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--gray-dark);
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+}
+
+.new-chat-btn {
+  width: 100%;
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.chat-item:hover {
+  background: var(--dark-card);
+}
+
+.chat-item.active {
+  background: var(--dark-card);
+  border-color: var(--purple);
+}
+
+.chat-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-item-title {
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-item-time {
+  font-size: 0.72rem;
+  color: var(--gray);
+  margin-top: 0.1rem;
+}
+
+.chat-delete {
+  background: transparent;
+  border: none;
+  color: var(--gray);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
+}
+
+.chat-item:hover .chat-delete {
+  opacity: 1;
+}
+
+.chat-delete:hover {
+  color: var(--error);
+}
+
 .chat-layout {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   max-width: 820px;
   margin: 0 auto;
   padding: 1.25rem 1.5rem 1.5rem;
-  height: calc(100vh - 59px); /* topbar height */
   box-sizing: border-box;
 }
 

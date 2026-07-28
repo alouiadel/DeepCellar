@@ -4,19 +4,12 @@ DeepCellar is becoming a minimalist, self-hosted AI hub for companies: a
 RAG chatbot over company documents, tool-equipped agents, and everyday AI
 utilities. One command, one SQLite file, fully offline.
 
-## Milestone A — Persistent chat sessions (IN PROGRESS)
+## Milestone A — Persistent chat sessions (DONE)
 
-Schema and list/create/get endpoints are merged. Remaining:
+Shipped: full chats CRUD, stream persistence with auto-titles, sidebar
+UI, pytest suite, GitHub Actions CI (ruff + prettier + pytest).
 
-- `PATCH /api/chats/{id}` (rename) and `DELETE /api/chats/{id}` (cascade)
-- `POST /api/chat` accepts optional `chat_id`: tee the stream and persist
-  user + assistant messages atomically; auto-title from the first user
-  message (~40 chars)
-- Chat page sidebar: new chat, session list (title + relative time,
-  active highlighted, delete on hover), click to load history
-- pytest suite: auth flow, chats CRUD, cross-user 404s
-
-## Milestone B — Basic RAG
+## Milestone B — Basic RAG (NEXT)
 
 - `POST /api/documents` accepts `.txt` / `.md` / `.pdf` (`pypdf`); chunk
   (~500 tokens with overlap), embed each chunk with `embeddinggemma` via
@@ -50,5 +43,4 @@ Schema and list/create/get endpoints are merged. Remaining:
 ## Milestone E — Packaging & visibility
 
 - One simple Dockerfile (`python run_app.py` stays the primary path)
-- GitHub Actions CI: ruff, prettier, pytest
 - Live demo, README GIFs + architecture diagram, community launches

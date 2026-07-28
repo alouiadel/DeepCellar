@@ -15,8 +15,10 @@ offline.
 
 - Streams replies from Ollama's native `/api/chat` endpoint through a
   FastAPI proxy (NDJSON)
-- Conversational memory within a temporary session — the full message
-  history is resent each turn (Ollama's chat API is stateless by design)
+- Persistent chat sessions in a sidebar: new chat, full history on click,
+  delete — the server tees the stream and stores each turn in SQLite
+- Conversational memory: the full message history is resent each turn
+  (Ollama's chat API is stateless by design)
 - Thinking models (detected natively via `capabilities`) get `think: true`
   automatically, with their reasoning shown in a collapsible block
 - Assistant replies rendered as markdown (bold, lists, code blocks, tables)
@@ -80,13 +82,16 @@ DeepCellar/
 ├── app/
 │   ├── main.py         FastAPI app: auth API, model list, streaming chat proxy
 │   ├── auth.py         argon2 hashing, JWT sessions, per-install secret key
-│   ├── db.py           SQLite users table
+│   ├── db.py           SQLite tables (users, chats, messages)
 │   └── ollama_client.py Ollama API client (model listing, chat streaming)
+├── tests/              pytest API suite (isolated SQLite per test)
+├── .github/workflows/  CI: ruff + prettier + pytest on push and PRs
 ├── pages/
 │   ├── index.html      Login / signup page
-│   ├── app.html        Chat window (protected)
+│   ├── app.html        Chat window with session sidebar (protected)
 │   └── models.html     Models dashboard (protected)
 ├── requirements.txt
+├── requirements-dev.txt Dev-only tools (pytest, httpx2)
 ├── next.md             Roadmap: milestone map (chat → RAG → company → agents)
 ├── static/
 │   ├── style.css       Theme (purple / dark / gray)
@@ -110,15 +115,16 @@ Files created at runtime (gitignored): `deepcellar.db`, `.secret_key`.
   native `capabilities` array (with a `/api/show` fallback for older
   Ollama versions).
 - **Chat memory** — Ollama's `/api/chat` is stateless, so the browser
-  keeps the conversation and resends it with every message. Reloading or
-  switching models starts a fresh temporary session.
+  keeps the conversation and resends it with every message. Sidebar chats
+  are persisted: the streaming proxy tees each turn into SQLite, so they
+  survive reloads. Switching models starts a fresh temporary session.
 
 ## Roadmap
 
 See [next.md](next.md) for the milestone map.
 
-- Persistent chat sessions (in progress)
-- RAG: document ingestion, embeddings, cited answers
+- Persistent chat sessions (done — sidebar, stream persistence, tests)
+- RAG: document ingestion, embeddings, cited answers (next)
 - Company layer: admin roles, shared knowledge bases, branding
 - Agents (MCP) and a toolbox of everyday AI utilities
 
@@ -129,12 +135,14 @@ and how to submit changes.
 
 ## Development
 
-Formatting (installed via Homebrew):
-
 ```bash
-ruff check --fix . && ruff format .   # Python
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/ -q  # API tests
+ruff check --fix . && ruff format .   # Python lint + format
 prettier --write .                    # HTML / CSS / JS
 ```
+
+CI runs ruff, prettier and pytest on every push and pull request.
 
 ## License
 
