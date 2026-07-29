@@ -1,24 +1,9 @@
-// --- Auth: load current user, bounce to login if not authenticated ---
-fetch("/api/me")
-  .then((res) => {
-    if (!res.ok) throw new Error("not authenticated");
-    return res.json();
-  })
-  .then(async (user) => {
-    document.getElementById("userInfo").textContent =
-      `${user.first_name} ${user.last_name} — @${user.username}`;
-    await loadModels();
-    await loadChats();
-    restoreLastChat();
-  })
-  .catch(() => {
-    window.location.href = "/";
-  });
-
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await fetch("/api/logout", { method: "POST" });
-  window.location.href = "/";
+initAuth(async () => {
+  await loadModels();
+  await loadChats();
+  restoreLastChat();
 });
+bindLogout();
 
 // --- Chat state ---
 const statusArea = document.getElementById("statusArea");
@@ -43,29 +28,19 @@ const state = {
 
 // --- Model picker (custom dropdown) ---
 async function loadModels() {
-  setStatus('<p class="loading">Connecting to Ollama…</p>');
-  let res;
-  try {
-    res = await fetch("/api/ollama/models");
-  } catch {
-    return showError("Could not reach the DeepCellar server.");
-  }
-  if (res.status === 401) {
-    window.location.href = "/";
-    return;
-  }
-  if (res.status === 503) return showOllamaDown();
-  if (!res.ok) return showError(`Unexpected server error (${res.status}).`);
+  const data = await fetchModels({
+    statusArea,
+    showOllamaDown() { setStatus(statusArea, renderOllamaDown()); bindRetry(loadModels); },
+    showError(text) { setStatus(statusArea, renderError(text)); bindRetry(loadModels); },
+  });
+  if (!data) return;
 
-  const data = await res.json();
-  // only models with the native "completion" capability can chat
-  // (embedding-only models like embeddinggemma are excluded)
   state.models = [...data.cloud, ...data.local].filter((m) => m.chatable);
   if (!state.models.length)
     return showError("No chat-capable models found in Ollama.");
 
   buildPicker(data);
-  setStatus("");
+  setStatus(statusArea, "");
   messagesEl.hidden = false;
   chatForm.hidden = false;
   chatInput.focus();
@@ -136,10 +111,8 @@ function selectModel(name, { silent = false } = {}) {
     .forEach((o) => o.classList.toggle("selected", o.dataset.model === name));
   closePicker();
   if (changed && !silent) {
-    // model switch = fresh conversation (auto-creates on first message)
-    state.messages = [];
+    resetChat();
     setActiveChat(null);
-    messagesEl.innerHTML = "";
     renderChatList();
   }
 }
@@ -246,7 +219,7 @@ function renderChatList() {
     text.append(title, time);
 
     const del = document.createElement("button");
-    del.className = "chat-delete";
+    del.className = "chat-delete reveal-on-hover";
     del.textContent = "×";
     del.title = "Delete chat";
     del.setAttribute("aria-label", "Delete chat");
@@ -271,8 +244,7 @@ async function newChat() {
   if (!res.ok) return;
   const chat = await res.json();
   setActiveChat(chat.id);
-  state.messages = [];
-  messagesEl.innerHTML = "";
+  resetChat();
   await loadChats();
   chatInput.focus();
 }
@@ -301,8 +273,7 @@ async function deleteChat(id) {
   if (!res.ok) return;
   if (state.chatId === id) {
     setActiveChat(null);
-    state.messages = [];
-    messagesEl.innerHTML = "";
+    resetChat();
   }
   await loadChats();
 }
@@ -330,32 +301,20 @@ function renderHistory() {
   scrollToBottom();
 }
 
-// --- Status helpers ---
-function setStatus(html) {
-  statusArea.innerHTML = html;
-  statusArea.hidden = !html;
+// --- State helpers ---
+function resetChat() {
+  state.messages = [];
+  messagesEl.innerHTML = "";
 }
 
 function showOllamaDown() {
-  setStatus(`
-    <div class="notice error-notice">
-      <strong>Ollama isn't running.</strong>
-      <p>Start it with <code>ollama serve</code> or open the Ollama app, then retry.</p>
-      <button class="btn-secondary" id="retryBtn">Retry</button>
-    </div>
-  `);
-  document.getElementById("retryBtn").addEventListener("click", loadModels);
+  setStatus(statusArea, renderOllamaDown());
+  bindRetry(loadModels);
 }
 
 function showError(text) {
-  setStatus(`
-    <div class="notice error-notice">
-      <strong>Something went wrong.</strong>
-      <p>${text}</p>
-      <button class="btn-secondary" id="retryBtn">Retry</button>
-    </div>
-  `);
-  document.getElementById("retryBtn").addEventListener("click", loadModels);
+  setStatus(statusArea, renderError(text));
+  bindRetry(loadModels);
 }
 
 // --- Rendering ---
@@ -382,16 +341,12 @@ function addBubble(role, text) {
 
   if (role === "assistant") {
     const copyBtn = document.createElement("button");
-    copyBtn.className = "copy-btn";
+    copyBtn.className = "copy-btn reveal-on-hover";
     copyBtn.setAttribute("aria-label", "Copy message");
     copyBtn.innerHTML =
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
     copyBtn.addEventListener("click", () => {
-      const text = body.textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        copyBtn.classList.add("copied");
-        setTimeout(() => copyBtn.classList.remove("copied"), 1500);
-      });
+      copyToClipboard(body.textContent).then(() => flashCopied(copyBtn));
     });
     bubble.appendChild(copyBtn);
   }
@@ -411,21 +366,15 @@ function addCodeCopyButtons(container) {
     wrap.appendChild(pre);
 
     const btn = document.createElement("button");
-    btn.className = "code-copy-btn";
+    btn.className = "code-copy-btn reveal-on-hover";
     btn.textContent = "Copy";
     btn.setAttribute("aria-label", "Copy code");
     btn.addEventListener("click", () => {
       const code = pre.querySelector("code");
-      navigator.clipboard
-        .writeText(code ? code.textContent : pre.textContent)
-        .then(() => {
-          btn.textContent = "Copied";
-          btn.classList.add("copied");
-          setTimeout(() => {
-            btn.textContent = "Copy";
-            btn.classList.remove("copied");
-          }, 1500);
-        });
+      copyToClipboard(code ? code.textContent : pre.textContent).then(() => {
+        btn.textContent = "Copied";
+        flashCopied(btn, () => { btn.textContent = "Copy"; });
+      });
     });
     wrap.appendChild(btn);
   }
@@ -502,10 +451,7 @@ async function sendMessage() {
       }),
       signal: controller.signal,
     });
-    if (res.status === 401) {
-      window.location.href = "/";
-      return;
-    }
+    if (redirectIfUnauthorized(res.status)) return;
     if (!res.ok || !res.body) throw new Error(`Server error ${res.status}`);
 
     // first message without a picked chat: the server auto-created one

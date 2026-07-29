@@ -494,6 +494,19 @@ body.dashboard {
   background: var(--purple);
 }
 
+/* ---------- Reveal-on-hover utility ---------- */
+
+.reveal-on-hover {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+*:hover > .reveal-on-hover,
+.reveal-on-hover:focus-visible,
+.reveal-on-hover.copied {
+  opacity: 1;
+}
+
 /* ---------- Chat (app.html) ---------- */
 
 .chat-page {
@@ -568,15 +581,8 @@ body.dashboard {
   padding: 0.15rem 0.35rem;
   border-radius: 6px;
   cursor: pointer;
-  opacity: 0;
   flex-shrink: 0;
-  transition:
-    opacity 0.15s,
-    color 0.15s;
-}
-
-.chat-item:hover .chat-delete {
-  opacity: 1;
+  transition: color 0.15s;
 }
 
 .chat-delete:hover {
@@ -916,16 +922,7 @@ body.dashboard {
   color: var(--gray);
   font-size: 0.72rem;
   cursor: pointer;
-  opacity: 0;
-  transition:
-    opacity 0.15s,
-    color 0.15s,
-    border-color 0.15s;
-}
-
-.code-block:hover .code-copy-btn,
-.code-copy-btn:focus-visible {
-  opacity: 1;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .code-copy-btn:hover {
@@ -934,7 +931,6 @@ body.dashboard {
 }
 
 .code-copy-btn.copied {
-  opacity: 1;
   color: var(--success);
   border-color: var(--success);
 }
@@ -1001,16 +997,10 @@ body.dashboard {
   background: transparent;
   color: var(--gray-dark);
   cursor: pointer;
-  opacity: 0;
   transition:
     opacity 0.2s,
     color 0.2s,
     background 0.2s;
-}
-
-.bubble.assistant:hover .copy-btn,
-.copy-btn:focus-visible {
-  opacity: 1;
 }
 
 .copy-btn:hover,
@@ -1020,7 +1010,6 @@ body.dashboard {
 }
 
 .copy-btn.copied {
-  opacity: 1;
   color: var(--success);
 }
 

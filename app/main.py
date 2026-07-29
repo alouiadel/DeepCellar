@@ -1,6 +1,5 @@
 import json
 from collections.abc import AsyncGenerator
-from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.responses import FileResponse, StreamingResponse
@@ -17,9 +16,9 @@ from app.auth import (
     hash_password,
     verify_password,
 )
+from app.config import CHAT_COLUMNS, OLLAMA_UNREACHABLE_MSG, PROJECT_ROOT
 from app.ollama_client import OllamaUnreachable, list_models, stream_chat
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PAGES_DIR = PROJECT_ROOT / "pages"
 
 app = FastAPI(title="DeepCellar")
@@ -66,6 +65,16 @@ def _user_id(conn, username: str) -> int:
     if not row:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
     return row["id"]
+
+
+def _get_chat_or_404(conn, chat_id: int, user_id: int) -> dict:
+    row = conn.execute(
+        f"SELECT {CHAT_COLUMNS} FROM chats WHERE id = ? AND user_id = ?",
+        (chat_id, user_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+    return row
 
 
 def _chat_dict(row) -> dict:
@@ -147,7 +156,7 @@ def list_chats(username: str = Depends(get_current_username)) -> dict:
     with db.get_connection() as conn:
         uid = _user_id(conn, username)
         rows = conn.execute(
-            "SELECT id, title, model, created_at, updated_at FROM chats"
+            f"SELECT {CHAT_COLUMNS} FROM chats"
             " WHERE user_id = ? ORDER BY updated_at DESC, id DESC",
             (uid,),
         ).fetchall()
@@ -166,7 +175,7 @@ def create_chat(
         )
         chat_id = cur.lastrowid
         row = conn.execute(
-            "SELECT id, title, model, created_at, updated_at FROM chats WHERE id = ?",
+            f"SELECT {CHAT_COLUMNS} FROM chats WHERE id = ?",
             (chat_id,),
         ).fetchone()
     return _chat_dict(row)
@@ -176,13 +185,7 @@ def create_chat(
 def get_chat(chat_id: int, username: str = Depends(get_current_username)) -> dict:
     with db.get_connection() as conn:
         uid = _user_id(conn, username)
-        row = conn.execute(
-            "SELECT id, title, model, created_at, updated_at FROM chats"
-            " WHERE id = ? AND user_id = ?",
-            (chat_id, uid),
-        ).fetchone()
-        if not row:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+        row = _get_chat_or_404(conn, chat_id, uid)
         messages = conn.execute(
             "SELECT role, content, thinking, created_at FROM messages"
             " WHERE chat_id = ? ORDER BY id ASC",
@@ -210,14 +213,13 @@ def rename_chat(
 ) -> dict:
     with db.get_connection() as conn:
         uid = _user_id(conn, username)
-        cur = conn.execute(
-            "UPDATE chats SET title = ? WHERE id = ? AND user_id = ?",
-            (body.title.strip(), chat_id, uid),
+        _get_chat_or_404(conn, chat_id, uid)
+        conn.execute(
+            "UPDATE chats SET title = ? WHERE id = ?",
+            (body.title.strip(), chat_id),
         )
-        if cur.rowcount == 0:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
         row = conn.execute(
-            "SELECT id, title, model, created_at, updated_at FROM chats WHERE id = ?",
+            f"SELECT {CHAT_COLUMNS} FROM chats WHERE id = ?",
             (chat_id,),
         ).fetchone()
     return _chat_dict(row)
@@ -227,11 +229,8 @@ def rename_chat(
 def delete_chat(chat_id: int, username: str = Depends(get_current_username)) -> dict:
     with db.get_connection() as conn:
         uid = _user_id(conn, username)
-        cur = conn.execute(
-            "DELETE FROM chats WHERE id = ? AND user_id = ?", (chat_id, uid)
-        )
-        if cur.rowcount == 0:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+        _get_chat_or_404(conn, chat_id, uid)
+        conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
     return {"ok": True}
 
 
@@ -242,7 +241,7 @@ def ollama_models(username: str = Depends(get_current_username)) -> dict:
     except OllamaUnreachable as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Ollama is not reachable. Start it with `ollama serve` or open the Ollama app.",
+            OLLAMA_UNREACHABLE_MSG,
         ) from exc
 
 
@@ -301,10 +300,8 @@ async def chat(body: ChatRequest, username: str = Depends(get_current_username))
                 "INSERT INTO chats (user_id, model) VALUES (?, ?)",
                 (uid, body.model),
             ).lastrowid
-        elif not conn.execute(
-            "SELECT 1 FROM chats WHERE id = ? AND user_id = ?", (chat_id, uid)
-        ).fetchone():
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Chat not found")
+        else:
+            _get_chat_or_404(conn, chat_id, uid)
     if messages[-1]["role"] == "user":
         stream = _persisting_stream(stream, chat_id, messages[-1]["content"])
     headers = {"X-Chat-Id": str(chat_id)} if body.chat_id is None else None

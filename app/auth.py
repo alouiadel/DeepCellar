@@ -1,13 +1,13 @@
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import jwt
 from fastapi import HTTPException, Request, status
 from pwdlib import PasswordHash
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from app.config import PROJECT_ROOT
+
 SECRET_KEY_PATH = PROJECT_ROOT / ".secret_key"
 
 ALGORITHM = "HS256"

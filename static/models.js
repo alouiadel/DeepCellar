@@ -1,75 +1,33 @@
-// --- Auth: load current user, bounce to login if not authenticated ---
-fetch("/api/me")
-  .then((res) => {
-    if (!res.ok) throw new Error("not authenticated");
-    return res.json();
-  })
-  .then((user) => {
-    document.getElementById("userInfo").textContent =
-      `${user.first_name} ${user.last_name} — @${user.username}`;
-    loadModels();
-  })
-  .catch(() => {
-    window.location.href = "/";
-  });
-
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await fetch("/api/logout", { method: "POST" });
-  window.location.href = "/";
-});
+initAuth(loadModels);
+bindLogout();
 
 // --- Ollama models ---
 const statusArea = document.getElementById("statusArea");
 const modelsArea = document.getElementById("modelsArea");
 
-function setStatus(html) {
-  statusArea.innerHTML = html;
-  statusArea.hidden = !html;
-}
-
 function showOllamaDown() {
   modelsArea.hidden = true;
-  setStatus(`
-    <div class="notice error-notice">
-      <strong>Ollama isn't running.</strong>
-      <p>Start it with <code>ollama serve</code> or open the Ollama app, then retry.</p>
-      <button class="btn-secondary" id="retryBtn">Retry</button>
-    </div>
-  `);
-  document.getElementById("retryBtn").addEventListener("click", loadModels);
+  setStatus(statusArea, renderOllamaDown());
+  bindRetry(loadModels);
 }
 
 function showError(text) {
   modelsArea.hidden = true;
-  setStatus(`
-    <div class="notice error-notice">
-      <strong>Something went wrong.</strong>
-      <p>${text}</p>
-      <button class="btn-secondary" id="retryBtn">Retry</button>
-    </div>
-  `);
-  document.getElementById("retryBtn").addEventListener("click", loadModels);
+  setStatus(statusArea, renderError(text));
+  bindRetry(loadModels);
 }
 
 async function loadModels() {
-  setStatus('<p class="loading">Connecting to Ollama…</p>');
-  let res;
-  try {
-    res = await fetch("/api/ollama/models");
-  } catch {
-    return showError("Could not reach the DeepCellar server.");
-  }
-  if (res.status === 401) {
-    window.location.href = "/";
-    return;
-  }
-  if (res.status === 503) return showOllamaDown();
-  if (!res.ok) return showError(`Unexpected server error (${res.status}).`);
+  const data = await fetchModels({
+    statusArea,
+    showOllamaDown,
+    showError,
+  });
+  if (!data) return;
 
-  const data = await res.json();
   renderGroup("cloud", data.cloud);
   renderGroup("local", data.local);
-  setStatus("");
+  setStatus(statusArea, "");
   modelsArea.hidden = false;
 }
 

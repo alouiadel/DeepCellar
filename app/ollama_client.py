@@ -4,6 +4,8 @@ from collections.abc import AsyncGenerator
 
 import httpx2 as httpx
 
+from app.config import OLLAMA_UNREACHABLE_MSG
+
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
 TIMEOUT = httpx.Timeout(3.0, connect=1.5)
 # No read timeout for chat streams: local models can take a while between chunks
@@ -94,7 +96,7 @@ async def stream_chat(
             json.dumps(
                 {
                     "done": True,
-                    "error": "Ollama is not reachable. Start it with `ollama serve`.",
+                    "error": OLLAMA_UNREACHABLE_MSG,
                 }
             )
             + "\n"
