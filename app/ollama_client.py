@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from collections.abc import AsyncGenerator
 
 import httpx2 as httpx
@@ -16,6 +17,16 @@ class OllamaUnreachable(Exception):
     """Raised when the Ollama server cannot be reached."""
 
 
+_NAME_SIZE_RE = re.compile(r"(\d+\.?\d*)\s*[bB]")
+
+
+def _parameter_size_from_name(name: str) -> str:
+    m = _NAME_SIZE_RE.search(name)
+    if m:
+        return m.group(1) + "B"
+    return ""
+
+
 def _summarize(model: dict) -> dict:
     details = model.get("details") or {}
     capabilities = model.get("capabilities") or []
@@ -28,7 +39,8 @@ def _summarize(model: dict) -> dict:
         "chatable": "completion" in capabilities,
         "capabilities": capabilities,
         "family": details.get("family") or "",
-        "parameter_size": details.get("parameter_size") or "",
+        "parameter_size": details.get("parameter_size")
+        or _parameter_size_from_name(model.get("name", "")),
         "quantization": details.get("quantization_level") or "",
         "format": details.get("format") or "",
         "context_length": details.get("context_length"),
