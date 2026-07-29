@@ -7,6 +7,8 @@ function initAuth(onUser) {
     .then((user) => {
       document.getElementById("userInfo").textContent =
         `${user.first_name} ${user.last_name} — @${user.username}`;
+      const avatar = document.getElementById("userAvatar");
+      if (avatar) avatar.src = "/api/avatar/me";
       onUser(user);
     })
     .catch(() => {

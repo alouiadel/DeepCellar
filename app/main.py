@@ -16,6 +16,7 @@ from app.auth import (
     hash_password,
     verify_password,
 )
+from app.avatar import generate_identicon
 from app.config import CHAT_COLUMNS, OLLAMA_UNREACHABLE_MSG, PROJECT_ROOT
 from app.ollama_client import OllamaUnreachable, list_models, stream_chat
 
@@ -149,6 +150,15 @@ def me(username: str = Depends(get_current_username)) -> dict:
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
     return dict(user)
+
+
+@app.get("/api/avatar/me")
+def avatar_me(username: str = Depends(get_current_username)):
+    return Response(
+        content=generate_identicon(username),
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @app.get("/api/chats")

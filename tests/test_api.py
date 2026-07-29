@@ -307,3 +307,26 @@ def test_ollama_models_unreachable(monkeypatch):
 
 def _raise(exc):
     raise exc
+
+
+def test_avatar(auth_client):
+    res = auth_client.get("/api/avatar/me")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/svg+xml"
+    body = res.text
+    assert body.startswith("<svg") and body.endswith("</svg>")
+    assert 'viewBox="0 0 108 108"' in body
+
+
+def test_avatar_deterministic():
+    from app.avatar import generate_identicon
+
+    a1 = generate_identicon("alice")
+    a2 = generate_identicon("alice")
+    a3 = generate_identicon("bob")
+    assert a1 == a2
+    assert a1 != a3
+
+
+def test_avatar_requires_auth(client):
+    assert client.get("/api/avatar/me").status_code == 401

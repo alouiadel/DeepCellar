@@ -244,6 +244,14 @@ body.dashboard {
   gap: 1rem;
 }
 
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-dark);
+  flex-shrink: 0;
+}
+
 .user-info {
   color: var(--gray);
   font-size: 0.85rem;
