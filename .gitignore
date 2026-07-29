@@ -13,3 +13,7 @@ deepcellar.db
 # Editors
 .vscode/
 .idea/
+
+# OpenCode config (local-only)
+opencode.json
+AGENTS.md

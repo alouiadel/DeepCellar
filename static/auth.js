@@ -5,10 +5,15 @@ function initAuth(onUser) {
       return res.json();
     })
     .then((user) => {
-      document.getElementById("userInfo").textContent =
-        `${user.first_name} ${user.last_name} — @${user.username}`;
-      const avatar = document.getElementById("userAvatar");
-      if (avatar) avatar.src = "/api/avatar/me";
+      const avatar = document.createElement("img");
+      avatar.className = "user-avatar";
+      avatar.src = "/api/avatar/me";
+      avatar.alt = "";
+      avatar.width = 32;
+      avatar.height = 32;
+      const info = document.getElementById("userInfo");
+      info.parentNode.insertBefore(avatar, info);
+      info.textContent = `${user.first_name} ${user.last_name} — @${user.username}`;
       onUser(user);
     })
     .catch(() => {
