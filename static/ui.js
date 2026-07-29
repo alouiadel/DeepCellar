@@ -61,7 +61,13 @@ async function fetchModels({ statusArea, showOllamaDown, showError }) {
     window.location.href = "/";
     return null;
   }
-  if (res.status === 503) { showOllamaDown(); return null; }
-  if (!res.ok) { showError(`Unexpected server error (${res.status}).`); return null; }
+  if (res.status === 503) {
+    showOllamaDown();
+    return null;
+  }
+  if (!res.ok) {
+    showError(`Unexpected server error (${res.status}).`);
+    return null;
+  }
   return await res.json();
 }

@@ -91,7 +91,7 @@ def _chat_dict(row) -> dict:
 def signup(body: SignupRequest) -> dict:
     if not USERNAME_RE.fullmatch(body.username):
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Username must be 3-30 characters: letters, digits, _ or -",
         )
     with db.get_connection() as conn:

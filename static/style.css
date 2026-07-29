@@ -922,7 +922,9 @@ body.dashboard {
   color: var(--gray);
   font-size: 0.72rem;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .code-copy-btn:hover {

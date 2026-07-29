@@ -211,11 +211,35 @@ def test_signup_validation(client):
     payloads = [
         # missing required fields
         ({}, 422),
-        ({"username": "a", "first_name": "A", "last_name": "B", "password": "12345678"}, 422),
+        (
+            {
+                "username": "a",
+                "first_name": "A",
+                "last_name": "B",
+                "password": "12345678",
+            },
+            422,
+        ),
         # bad username character
-        ({"username": "bad!", "first_name": "A", "last_name": "B", "password": "12345678"}, 422),
+        (
+            {
+                "username": "bad!",
+                "first_name": "A",
+                "last_name": "B",
+                "password": "12345678",
+            },
+            422,
+        ),
         # too-short password
-        ({"username": "ok", "first_name": "A", "last_name": "B", "password": "short"}, 422),
+        (
+            {
+                "username": "ok",
+                "first_name": "A",
+                "last_name": "B",
+                "password": "short",
+            },
+            422,
+        ),
     ]
     for body, expected in payloads:
         assert client.post("/api/signup", json=body).status_code == expected
@@ -229,14 +253,28 @@ def test_chat_404_on_nonexistent(auth_client):
 
 def test_ollama_models(monkeypatch):
     monkeypatch.setattr(
-        main, "list_models",
-        lambda: {"cloud": [], "local": [
-            {"name": "llama3", "chatable": True, "thinking": False, "cloud": False,
-             "remote_host": None, "capabilities": ["completion"],
-             "family": "llama", "parameter_size": "8B", "quantization": "Q4_K_M",
-             "format": "gguf", "context_length": 8192, "size_bytes": 4.5e9,
-             "modified_at": "2024-01-01T00:00:00Z"},
-        ]},
+        main,
+        "list_models",
+        lambda: {
+            "cloud": [],
+            "local": [
+                {
+                    "name": "llama3",
+                    "chatable": True,
+                    "thinking": False,
+                    "cloud": False,
+                    "remote_host": None,
+                    "capabilities": ["completion"],
+                    "family": "llama",
+                    "parameter_size": "8B",
+                    "quantization": "Q4_K_M",
+                    "format": "gguf",
+                    "context_length": 8192,
+                    "size_bytes": 4.5e9,
+                    "modified_at": "2024-01-01T00:00:00Z",
+                },
+            ],
+        },
     )
     client = TestClient(main.app)
     signup(client)
@@ -251,12 +289,14 @@ def test_ollama_models(monkeypatch):
 
 def test_ollama_models_unreachable(monkeypatch):
     monkeypatch.setattr(
-        main, "list_models",
+        main,
+        "list_models",
         lambda: (_ for _ in ()),  # dummy, immediately overridden
     )
     monkeypatch.setattr(
-        main, "list_models",
-        lambda: (_raise(OllamaUnreachable("down"))),
+        main,
+        "list_models",
+        lambda: _raise(OllamaUnreachable("down")),
     )
     client = TestClient(main.app)
     signup(client)

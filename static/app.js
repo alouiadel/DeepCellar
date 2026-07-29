@@ -30,8 +30,14 @@ const state = {
 async function loadModels() {
   const data = await fetchModels({
     statusArea,
-    showOllamaDown() { setStatus(statusArea, renderOllamaDown()); bindRetry(loadModels); },
-    showError(text) { setStatus(statusArea, renderError(text)); bindRetry(loadModels); },
+    showOllamaDown() {
+      setStatus(statusArea, renderOllamaDown());
+      bindRetry(loadModels);
+    },
+    showError(text) {
+      setStatus(statusArea, renderError(text));
+      bindRetry(loadModels);
+    },
   });
   if (!data) return;
 
@@ -373,7 +379,9 @@ function addCodeCopyButtons(container) {
       const code = pre.querySelector("code");
       copyToClipboard(code ? code.textContent : pre.textContent).then(() => {
         btn.textContent = "Copied";
-        flashCopied(btn, () => { btn.textContent = "Copy"; });
+        flashCopied(btn, () => {
+          btn.textContent = "Copy";
+        });
       });
     });
     wrap.appendChild(btn);
