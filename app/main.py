@@ -49,6 +49,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=200)
     think: bool = False
     chat_id: int | None = None
+    regenerate: bool = False
 
 
 class RenameChatRequest(BaseModel):
@@ -256,7 +257,11 @@ def ollama_models(username: str = Depends(get_current_username)) -> dict:
 
 
 async def _persisting_stream(
-    stream: AsyncGenerator[str, None], chat_id: int, user_content: str
+    stream: AsyncGenerator[str, None],
+    chat_id: int,
+    user_content: str,
+    skip_user: bool = False,
+    replace_last_assistant: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Tee the NDJSON stream; on success persist the whole turn atomically.
 
@@ -280,10 +285,19 @@ async def _persisting_stream(
     if failed:
         return
     with db.get_connection() as conn:
-        conn.execute(
-            "INSERT INTO messages (chat_id, role, content) VALUES (?, 'user', ?)",
-            (chat_id, user_content),
-        )
+        if replace_last_assistant:
+            last = conn.execute(
+                "SELECT id FROM messages WHERE chat_id = ? AND role = 'assistant'"
+                " ORDER BY id DESC LIMIT 1",
+                (chat_id,),
+            ).fetchone()
+            if last:
+                conn.execute("DELETE FROM messages WHERE id = ?", (last["id"],))
+        if not skip_user:
+            conn.execute(
+                "INSERT INTO messages (chat_id, role, content) VALUES (?, 'user', ?)",
+                (chat_id, user_content),
+            )
         conn.execute(
             "INSERT INTO messages (chat_id, role, content, thinking)"
             " VALUES (?, 'assistant', ?, ?)",
@@ -305,7 +319,11 @@ async def chat(body: ChatRequest, username: str = Depends(get_current_username))
         uid = _user_id(conn, username)
         chat_id = body.chat_id
         if chat_id is None:
-            # chatting without picking a chat auto-creates one
+            if body.regenerate:
+                raise HTTPException(
+                    status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    "Cannot regenerate without a chat_id",
+                )
             chat_id = conn.execute(
                 "INSERT INTO chats (user_id, model) VALUES (?, ?)",
                 (uid, body.model),
@@ -313,7 +331,13 @@ async def chat(body: ChatRequest, username: str = Depends(get_current_username))
         else:
             _get_chat_or_404(conn, chat_id, uid)
     if messages[-1]["role"] == "user":
-        stream = _persisting_stream(stream, chat_id, messages[-1]["content"])
+        stream = _persisting_stream(
+            stream,
+            chat_id,
+            messages[-1]["content"],
+            skip_user=body.regenerate,
+            replace_last_assistant=body.regenerate,
+        )
     headers = {"X-Chat-Id": str(chat_id)} if body.chat_id is None else None
     return StreamingResponse(stream, media_type="application/x-ndjson", headers=headers)
 

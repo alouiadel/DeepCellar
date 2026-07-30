@@ -6,12 +6,14 @@ document.getElementById("showSignup").addEventListener("click", (e) => {
   e.preventDefault();
   loginView.hidden = true;
   signupView.hidden = false;
+  document.getElementById("firstName").focus();
 });
 
 document.getElementById("showLogin").addEventListener("click", (e) => {
   e.preventDefault();
   signupView.hidden = true;
   loginView.hidden = false;
+  document.getElementById("loginUsername").focus();
 });
 
 // --- Show / hide password buttons ---
@@ -66,12 +68,17 @@ loginForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  showMessage(loginMessage, "Signing in...", "success");
+  const btn = loginForm.querySelector(".btn-primary");
+  btn.disabled = true;
+  btn.textContent = "Signing in...";
+  showMessage(loginMessage, "", "success");
   const { ok, data } = await apiPost("/api/login", { username, password });
 
   if (ok) {
     window.location.href = "/app.html";
   } else {
+    btn.disabled = false;
+    btn.textContent = "Sign in";
     showMessage(loginMessage, apiError(data, "Login failed."), "error");
   }
 });
@@ -108,7 +115,10 @@ signupForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  showMessage(signupMessage, "Creating account...", "success");
+  const btn = signupForm.querySelector(".btn-primary");
+  btn.disabled = true;
+  btn.textContent = "Creating account...";
+  showMessage(signupMessage, "", "success");
   const { ok, data } = await apiPost("/api/signup", {
     username,
     first_name,
@@ -117,15 +127,18 @@ signupForm.addEventListener("submit", async (e) => {
   });
 
   if (!ok) {
+    btn.disabled = false;
+    btn.textContent = "Create account";
     showMessage(signupMessage, apiError(data, "Signup failed."), "error");
     return;
   }
 
-  // Account created — log in right away
   const login = await apiPost("/api/login", { username, password });
   if (login.ok) {
     window.location.href = "/app.html";
   } else {
+    btn.disabled = false;
+    btn.textContent = "Create account";
     showMessage(signupMessage, "Account created! Please sign in.", "success");
     document.getElementById("showLogin").click();
   }
