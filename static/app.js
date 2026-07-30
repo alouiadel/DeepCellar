@@ -449,7 +449,7 @@ async function openChat(id) {
   var chat = await res.json();
   setActiveChat(chat.id);
   state.messages = chat.messages.map(function (m) {
-    var msg = { role: m.role, content: m.content };
+    var msg = { role: m.role, content: m.content, created_at: m.created_at };
     if (m.thinking) msg.thinking = m.thinking;
     return msg;
   });

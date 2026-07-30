@@ -1328,7 +1328,7 @@ body.dashboard {
 .bubble-time {
   display: block;
   font-size: 0.65rem;
-  color: var(--gray-dark);
+  color: var(--gray);
   margin-top: 0.35rem;
   text-align: right;
 }
